@@ -75,6 +75,29 @@ create table if not exists public.settings (
 );
 insert into public.settings(id) values (1) on conflict do nothing;
 
+-- Kolom tambahan (aman untuk proyek yang sudah berjalan)
+alter table public.members add column if not exists hours_per_day numeric(4,1) not null default 7 check (hours_per_day between 1 and 12);
+alter table public.members add column if not exists routine_hours numeric(5,1) not null default 0 check (routine_hours between 0 and 60);
+alter table public.members add column if not exists routine_note text not null default '' check (char_length(routine_note) <= 120);
+alter table public.tasks add column if not exists skills text[] not null default '{}';
+alter table public.tasks add column if not exists start_date date;
+alter table public.activity_logs add column if not exists meta jsonb;
+
+-- Jadwal cuti / izin / sakit (untuk kalender kapasitas)
+create table if not exists public.leaves (
+  id          uuid primary key default gen_random_uuid(),
+  member_id   uuid not null references public.members on delete cascade,
+  start_date  date not null,
+  end_date    date not null,
+  type        text not null default 'Cuti' check (type in ('Cuti','Sakit','Izin')),
+  note        text not null default '' check (char_length(note) <= 120),
+  demo        boolean not null default false,
+  created_at  timestamptz not null default now(),
+  created_by  uuid default auth.uid() references auth.users on delete set null,
+  constraint leave_range check (end_date >= start_date and end_date - start_date <= 365)
+);
+create index if not exists leaves_member_idx on public.leaves(member_id, start_date);
+
 -- ---------------------------------------------------------------------
 -- Fungsi bantu peran
 -- ---------------------------------------------------------------------
@@ -139,16 +162,16 @@ create trigger guard_profile before update on public.profiles
 create or replace function public.guard_task_update() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  if public.is_lead() or coalesce(current_setting('teamsync.handover', true), '') = 'on' then
+  if auth.uid() is null or public.is_lead() or coalesce(current_setting('teamsync.handover', true), '') = 'on' then
     return new;
   end if;
   if (new.title, new.descr, new.complexity, new.urgency, new.urgency_mode, new.hours, new.deadline,
       new.weight, new.pic_id, new.backup_id, new.created_at, new.created_by, new.auto_picked,
-      new.handovers, new.demo)
+      new.handovers, new.demo, new.skills, new.start_date)
      is distinct from
      (old.title, old.descr, old.complexity, old.urgency, old.urgency_mode, old.hours, old.deadline,
       old.weight, old.pic_id, old.backup_id, old.created_at, old.created_by, old.auto_picked,
-      old.handovers, old.demo) then
+      old.handovers, old.demo, old.skills, old.start_date) then
     raise exception 'Anggota hanya dapat mengubah status progres tugas';
   end if;
   return new;
@@ -160,7 +183,8 @@ create trigger guard_task_update before update on public.tasks
 
 -- Handover: PIC digantikan Backup, bobot tugas ikut berpindah.
 -- Boleh dipanggil oleh Team Lead atau oleh Backup tugas tersebut.
-create or replace function public.handover_task(p_task uuid, p_new_backup uuid, p_reason text)
+drop function if exists public.handover_task(uuid, uuid, text);
+create or replace function public.handover_task(p_task uuid, p_new_backup uuid, p_reason text, p_meta jsonb default null)
 returns void
 language plpgsql security definer set search_path = public as $$
 declare
@@ -189,7 +213,7 @@ begin
    where id = p_task;
   perform set_config('teamsync.handover', 'off', true);
 
-  insert into public.activity_logs (type, text, by_user, by_member, task_id)
+  insert into public.activity_logs (type, text, by_user, by_member, task_id, meta)
   values ('handover',
           format('Handover: "%s" dialihkan dari %s ke %s (%s). Backup baru: %s.',
                  t.title,
@@ -197,11 +221,11 @@ begin
                  coalesce((select name from public.members where id = t.backup_id), '—'),
                  v_reason,
                  coalesce((select name from public.members where id = p_new_backup), '—')),
-          auth.uid(), me, p_task);
+          auth.uid(), me, p_task, p_meta);
 end $$;
 
-revoke all on function public.handover_task(uuid, uuid, text) from public, anon;
-grant execute on function public.handover_task(uuid, uuid, text) to authenticated;
+revoke all on function public.handover_task(uuid, uuid, text, jsonb) from public, anon;
+grant execute on function public.handover_task(uuid, uuid, text, jsonb) to authenticated;
 
 -- ---------------------------------------------------------------------
 -- Row Level Security
@@ -211,6 +235,7 @@ alter table public.profiles      enable row level security;
 alter table public.tasks         enable row level security;
 alter table public.activity_logs enable row level security;
 alter table public.settings      enable row level security;
+alter table public.leaves        enable row level security;
 
 -- members: semua pengguna masuk dapat membaca; hanya Team Lead yang mengubah
 drop policy if exists members_read on public.members;
@@ -258,12 +283,23 @@ create policy settings_lead_write on public.settings for update to authenticated
 drop policy if exists settings_lead_insert on public.settings;
 create policy settings_lead_insert on public.settings for insert to authenticated with check (public.is_lead());
 
+-- leaves: semua membaca (kalender transparan); Team Lead atau anggota itu sendiri yang mengatur
+drop policy if exists leaves_read on public.leaves;
+create policy leaves_read on public.leaves for select to authenticated using (true);
+drop policy if exists leaves_insert on public.leaves;
+create policy leaves_insert on public.leaves for insert to authenticated with check (public.is_lead() or member_id = public.my_member_id());
+drop policy if exists leaves_update on public.leaves;
+create policy leaves_update on public.leaves for update to authenticated
+  using (public.is_lead() or member_id = public.my_member_id()) with check (public.is_lead() or member_id = public.my_member_id());
+drop policy if exists leaves_delete on public.leaves;
+create policy leaves_delete on public.leaves for delete to authenticated using (public.is_lead() or member_id = public.my_member_id());
+
 -- ---------------------------------------------------------------------
 -- Hak akses API (diperlukan jika proyek tidak otomatis mengekspos tabel baru)
 -- RLS di atas tetap membatasi baris dan aksi yang boleh dilakukan.
 -- ---------------------------------------------------------------------
 grant usage on schema public to anon, authenticated;
-grant select, insert, update, delete on public.members, public.profiles, public.tasks, public.activity_logs, public.settings to authenticated;
+grant select, insert, update, delete on public.members, public.profiles, public.tasks, public.activity_logs, public.settings, public.leaves to authenticated;
 grant usage, select on sequence public.activity_logs_id_seq to authenticated;
 grant execute on function public.is_lead() to authenticated;
 grant execute on function public.my_member_id() to authenticated;
@@ -289,7 +325,7 @@ where id = (select p.id from public.profiles p join auth.users u on u.id = p.id 
 do $$
 declare t text;
 begin
-  foreach t in array array['members','tasks','activity_logs','settings','profiles'] loop
+  foreach t in array array['members','tasks','activity_logs','settings','profiles','leaves'] loop
     if not exists (
       select 1 from pg_publication_tables
       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t

@@ -10,6 +10,10 @@ Frontend statis (HTML + JavaScript, tanpa build) dengan backend **Supabase** (Po
 3. **Auto-Assign PIC & Backup**: sistem merekomendasikan anggota dengan kapasitas tersisa paling proporsional; Team Lead dapat menerima atau mengganti pilihan.
 4. **Eskalasi & Handover**: jika beban PIC > 90% atau status PIC menjadi Cuti/Sakit/Izin, muncul notifikasi dan tombol Handover. Handover dijalankan di server (`handover_task`) sehingga hanya Team Lead atau Backup tugas tersebut yang bisa melakukannya.
 5. **Log Transparansi & Riwayat Kinerja**: papan tugas terbuka, log aktivitas yang tidak bisa diedit (jejak audit), dan laporan evaluasi berkala yang bisa diekspor ke CSV.
+6. **Skill-Based Assignment**: setiap tugas mencantumkan skill yang dibutuhkan. Rekomendasi mengutamakan anggota yang punya kompetensi; anggota yang kosong tetapi tidak punya skill relevan tidak otomatis dipilih. Skill yang cocok dan yang kurang ditampilkan di setiap kandidat.
+7. **Capacity Planning & Kalender Kerja**: sisa jam tugas disebar ke hari kerja PIC antara tanggal mulai dan tenggat, lalu dibandingkan dengan jam tersedia per minggu/bulan (jam kerja per hari, cuti, hari libur tim, dan tugas rutin). Sistem membedakan anggota yang sibuk minggu ini dari yang baru padat bulan depan, dan memperingatkan cuti mendatang yang bentrok dengan tenggat.
+8. **Workload Fairness Index**: indeks keadilan (Indeks Jain, 0–100) dan ketimpangan (koefisien Gini) dihitung dari utilisasi relatif terhadap kapasitas, bukan jumlah tugas. Dashboard menampilkan sebaran utilisasi per anggota serta perubahan indeks sebelum dan sesudah setiap handover/redistribusi.
+9. **What-If Scenario Simulator**: uji skenario seperti anggota cuti N hari, beberapa tugas baru masuk, atau tenggat dimajukan. Sistem menyusun alokasi yang disarankan (termasuk redistribusi otomatis agar lebih merata), membandingkan sebelum vs. sesudah, dan tidak mengubah data sampai Team Lead menekan **Terapkan**.
 
 ## Alur kerja
 
@@ -31,13 +35,31 @@ Beban % = Beban ÷ Kapasitas × 100
 
 Urgensi otomatis dari tenggat: ≤ 1 hari = 5, ≤ 3 hari = 4, ≤ 7 hari = 3, ≤ 14 hari = 2, lebih lama = 1.
 Indeks kinerja = 60% × (poin selesai ÷ poin tertinggi tim) + 40% × persentase tepat waktu.
+
+**Kalender kapasitas**
+
+```
+Jam tersedia  = (hari kerja − hari cuti − hari libur) × jam kerja per hari − jam rutin per minggu × (hari kerja tersedia ÷ 5)
+Sisa jam tugas = estimasi jam × (To Do 100%, In Progress 60%, Review 20%)
+Utilisasi jam = (sisa jam tugas PIC + 20% × sisa jam tugas Backup) di periode itu ÷ jam tersedia
+```
+
+**Keadilan beban** (u = utilisasi anggota yang hadir hari ini)
+
+```
+Indeks keadilan = (Σu)² ÷ (n × Σu²) × 100      100 = semua anggota sama beratnya
+Gini            = Σ|uᵢ − uⱼ| ÷ (2 n² × rata-rata u)   0 = merata, 1 = timpang total
+```
+
+**Urutan rekomendasi**: kandidat yang tidak hadir di urutan terakhir; kandidat tanpa skill yang dibutuhkan di bawah kandidat yang punya skill (meski sedikit di atas batas merah); lalu beban tertinggi antara beban poin dan beban jam di periode tugas.
 Semua ambang dan koefisien dapat diubah Team Lead di halaman **Tim & Kapasitas**.
 
 ## Struktur proyek
 
 ```
 index.html            Tampilan dan gaya
-app.js                Logika aplikasi (perhitungan, rekomendasi, sinkronisasi)
+app.js                Tampilan dan sinkronisasi data
+planning.js           Mesin perencanaan: skill, kalender kapasitas, indeks keadilan, simulator
 config.js             Alamat & anon key Supabase (diisi saat setup)
 supabase/schema.sql   Tabel, Row Level Security, trigger, fungsi handover, realtime
 ```
@@ -55,6 +77,10 @@ supabase/schema.sql   Tabel, Row Level Security, trigger, fungsi handover, realt
 
 Tanpa `config.js` yang terisi, aplikasi berjalan dalam **mode pratinjau** dengan data contoh di memori, berguna untuk demo tanpa database.
 
+## Memperbarui database yang sudah berjalan
+
+Setiap kali `supabase/schema.sql` berubah, jalankan ulang seluruh isinya di **SQL Editor**. Skrip menambah kolom dan tabel baru (misalnya `leaves`, `skills`, `start_date`) tanpa menghapus data yang ada.
+
 ## Keamanan & hak akses
 
 Semua aturan ditegakkan di database (Row Level Security dan trigger), bukan hanya di tampilan:
@@ -65,6 +91,7 @@ Semua aturan ditegakkan di database (Row Level Security dan trigger), bukan hany
 | Tugas | Semua pengguna yang masuk (transparan) | Team Lead: semua kolom. PIC/Backup: hanya status progres |
 | Handover | — | Team Lead atau Backup tugas tersebut, lewat fungsi `handover_task` |
 | Log aktivitas | Semua pengguna yang masuk | Hanya menambah atas nama sendiri; tidak bisa diedit. Team Lead boleh menghapus |
+| Jadwal cuti | Semua pengguna yang masuk | Team Lead, atau anggota untuk jadwalnya sendiri |
 | Aturan sistem | Semua pengguna yang masuk | Team Lead |
 | Peran akun | Semua pengguna yang masuk | Team Lead (minimal selalu ada satu Team Lead) |
 
