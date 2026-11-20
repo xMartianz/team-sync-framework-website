@@ -890,6 +890,7 @@ function authMsg(e) {
   if (/not confirmed/i.test(m)) return "Email belum dikonfirmasi. Buka tautan di kotak masuk Anda.";
   if (/already registered/i.test(m)) return "Email ini sudah terdaftar. Silakan masuk.";
   if (/at least|password should/i.test(m)) return "Kata sandi minimal 8 karakter.";
+  if (/email rate limit/i.test(m)) return "Batas pengiriman email konfirmasi tercapai. Coba lagi sekitar 1 jam lagi, atau minta Team Lead menonaktifkan konfirmasi email di Supabase.";
   if (/rate limit/i.test(m)) return "Terlalu banyak percobaan. Tunggu beberapa menit lalu coba lagi.";
   return m || "Terjadi kesalahan. Periksa koneksi lalu coba lagi.";
 }
