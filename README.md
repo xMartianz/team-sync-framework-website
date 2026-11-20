@@ -1,15 +1,15 @@
 # TeamSync
 
 Sistem informasi pembagian beban kerja tim yang adil, transparan, dan berbasis data.
-
-**Demo langsung (data tersimpan & dibagikan):** https://claude.ai/artifact/NZCtEVE8hQ4hrVpiAL6rQ4
+Frontend statis (HTML + JavaScript, tanpa build) dengan backend **Supabase** (Postgres, Auth, Realtime).
 
 ## Fitur utama
 
-1. **Dashboard Kapasitas & Beban Kerja (real-time)**: meter beban per anggota dengan indikator hijau (aman, < 70%), kuning (mendekati batas, 70–90%), dan merah (overload, > 90%). Beban PIC dan beban siaga Backup ditampilkan terpisah.
+1. **Dashboard Kapasitas & Beban Kerja (real-time)**: meter beban per anggota dengan indikator hijau (aman, < 70%), kuning (mendekati batas, 70–90%), dan merah (overload, > 90%). Beban PIC dan beban siaga Backup ditampilkan terpisah. Perubahan dari anggota lain muncul langsung lewat Supabase Realtime.
 2. **Kalkulator Pembobotan Otomatis**: parameter Kompleksitas, Urgensi (otomatis dari tenggat atau manual), dan Estimasi Durasi dikonversi menjadi poin beban kerja.
 3. **Auto-Assign PIC & Backup**: sistem merekomendasikan anggota dengan kapasitas tersisa paling proporsional; Team Lead dapat menerima atau mengganti pilihan.
-4. **Log Transparansi & Riwayat Kinerja**: papan tugas terbuka, log aktivitas, dan laporan evaluasi berkala yang bisa diekspor ke CSV.
+4. **Eskalasi & Handover**: jika beban PIC > 90% atau status PIC menjadi Cuti/Sakit/Izin, muncul notifikasi dan tombol Handover. Handover dijalankan di server (`handover_task`) sehingga hanya Team Lead atau Backup tugas tersebut yang bisa melakukannya.
+5. **Log Transparansi & Riwayat Kinerja**: papan tugas terbuka, log aktivitas yang tidak bisa diedit (jejak audit), dan laporan evaluasi berkala yang bisa diekspor ke CSV.
 
 ## Alur kerja
 
@@ -19,7 +19,7 @@ Sistem informasi pembagian beban kerja tim yang adil, transparan, dan berbasis d
 | 2. Input tugas & pembobotan | Team Lead | Pilih kompleksitas, tenggat/urgensi, dan estimasi jam; sistem menghitung Total Bobot Tugas. |
 | 3. Smart assignment | Team Lead | Sistem mengurutkan kandidat; Team Lead menetapkan 1 PIC dan 1 Backup (beban siaga 20% dari bobot). |
 | 4. Eksekusi & pemantauan | Semua anggota | Papan To Do / In Progress / Review / Done terbuka untuk semua; PIC & Backup memperbarui progres. |
-| 5. Eskalasi otomatis | Sistem | Jika beban PIC > 90% atau status PIC menjadi Cuti/Sakit/Izin, muncul notifikasi dan tombol Handover ke Backup. |
+| 5. Eskalasi otomatis | Sistem | Notifikasi dan tombol Handover agar Backup mengambil alih tugas beserta bobot poinnya. |
 
 ## Rumus
 
@@ -30,13 +30,48 @@ Beban % = Beban ÷ Kapasitas × 100
 ```
 
 Urgensi otomatis dari tenggat: ≤ 1 hari = 5, ≤ 3 hari = 4, ≤ 7 hari = 3, ≤ 14 hari = 2, lebih lama = 1.
+Indeks kinerja = 60% × (poin selesai ÷ poin tertinggi tim) + 40% × persentase tepat waktu.
 Semua ambang dan koefisien dapat diubah Team Lead di halaman **Tim & Kapasitas**.
 
-Indeks kinerja pada laporan = 60% × (poin selesai ÷ poin tertinggi tim) + 40% × persentase tepat waktu.
+## Struktur proyek
 
-## Menjalankan
+```
+index.html            Tampilan dan gaya
+app.js                Logika aplikasi (perhitungan, rekomendasi, sinkronisasi)
+config.js             Alamat & anon key Supabase (diisi saat setup)
+supabase/schema.sql   Tabel, Row Level Security, trigger, fungsi handover, realtime
+```
 
-Aplikasi berupa satu file `index.html` tanpa proses build.
+## Setup dengan Supabase (± 10 menit)
 
-- **Di claude.ai (link demo di atas):** data tersimpan di database bersama, hak akses mengikuti menu Share (Editor = Team Lead, Contributor = Anggota).
-- **Lokal / hosting statis (GitHub Pages, Netlify, dll.):** buka `index.html` di browser. Di luar claude.ai aplikasi berjalan dalam *mode pratinjau* dengan data contoh di memori (tidak tersimpan). Untuk penyimpanan permanen di hosting sendiri, lapisan penyimpanan (`put`, `patch`, `del` di dalam skrip) dapat dihubungkan ke backend seperti Firebase/Supabase.
+1. **Buat proyek** di [supabase.com](https://supabase.com) (paket gratis cukup).
+2. **Buat database**: buka *SQL Editor* → *New query*, tempel seluruh isi `supabase/schema.sql`, lalu klik *Run*. Skrip aman dijalankan ulang.
+3. **Isi `config.js`**: salin *Project URL* dan *anon public key* dari *Project Settings → API* ke `config.js`.
+   Anon key memang dirancang untuk dipakai di browser; keamanan data dijaga oleh Row Level Security. Jangan pernah memakai `service_role` key di frontend.
+4. **Atur URL autentikasi**: di *Authentication → URL Configuration*, isi *Site URL* dengan alamat tempat aplikasi di-hosting (misalnya `https://namaanda.github.io/team-sync-framework-website/`). Ini dipakai untuk tautan konfirmasi email dan reset kata sandi.
+5. **Hosting**: unggah folder ini ke hosting statis apa pun: GitHub Pages (*Settings → Pages → Deploy from branch → main*), Netlify, atau Vercel. Untuk mencoba di komputer sendiri, jalankan `npx serve .` lalu buka alamat yang muncul.
+6. **Daftar sebagai Team Lead**: akun **pertama** yang mendaftar otomatis menjadi Team Lead. Setelah masuk, klik *Muat data contoh* untuk mencoba, atau langsung *Tambah anggota*.
+7. **Undang tim**: bagikan alamat aplikasi. Anggota mendaftar dengan email masing-masing; Team Lead menautkan setiap akun ke profil anggotanya (atau anggota memilih sendiri lewat *Saya adalah*) di halaman **Tim & Kapasitas → Akun & peran**. Team Lead juga bisa menjadikan akun lain Team Lead dari sana.
+
+Tanpa `config.js` yang terisi, aplikasi berjalan dalam **mode pratinjau** dengan data contoh di memori, berguna untuk demo tanpa database.
+
+## Keamanan & hak akses
+
+Semua aturan ditegakkan di database (Row Level Security dan trigger), bukan hanya di tampilan:
+
+| Data | Membaca | Mengubah |
+|---|---|---|
+| Anggota & kapasitas | Semua pengguna yang masuk | Team Lead |
+| Tugas | Semua pengguna yang masuk (transparan) | Team Lead: semua kolom. PIC/Backup: hanya status progres |
+| Handover | — | Team Lead atau Backup tugas tersebut, lewat fungsi `handover_task` |
+| Log aktivitas | Semua pengguna yang masuk | Hanya menambah atas nama sendiri; tidak bisa diedit. Team Lead boleh menghapus |
+| Aturan sistem | Semua pengguna yang masuk | Team Lead |
+| Peran akun | Semua pengguna yang masuk | Team Lead (minimal selalu ada satu Team Lead) |
+
+Pengunjung yang belum masuk tidak dapat membaca data apa pun.
+
+## Batasan saat ini
+
+- Satu proyek Supabase melayani satu tim. Untuk banyak tim, tambahkan kolom `team_id` dan sesuaikan policy.
+- Eskalasi dihitung di browser setiap kali data berubah, jadi notifikasi tampil saat aplikasi dibuka; belum ada notifikasi email/push.
+- Log menampilkan 400 aktivitas terbaru; data lama tetap tersimpan di tabel `activity_logs`.
