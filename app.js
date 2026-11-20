@@ -160,7 +160,7 @@ const FETCH = {
 async function fetchTable(name) {
   if (!sb || !S.me.id) return;
   const { data, error } = await FETCH[name]();
-  if (error) { console.error(name, error); S.stale = true; renderBanner(); return; }
+  if (error) { console.error(name, error); S.stale = true; S.lastErr = `${name}: ${error.code || ""} ${error.message || ""}`.trim(); renderBanner(); return; }
   if (name === "members") { S.members = data.map(fromRow); S.ready.members = true; }
   else if (name === "tasks") { S.tasks = data.map(fromRow); S.ready.tasks = true; }
   else if (name === "logs") S.logs = data.map(fromRow);
@@ -284,7 +284,7 @@ function renderWho() {
 function renderBanner() {
   const parts = [];
   if (S.mode === "local") parts.push(`<div class="banner"><b>Mode pratinjau.</b> Supabase belum dikonfigurasi di <span class="mono">config.js</span>, jadi data contoh hanya ada di memori dan hilang saat halaman dimuat ulang.</div>`);
-  if (S.stale) parts.push(`<div class="banner warn"><b>Koneksi ke database terganggu.</b> Tampilan mungkin belum terbaru; sistem terus mencoba tersambung.</div>`);
+  if (S.stale) parts.push(`<div class="banner warn"><b>Koneksi ke database terganggu.</b> Tampilan mungkin belum terbaru; sistem terus mencoba tersambung.${S.lastErr ? `<span class="mono" style="font-size:.76rem;overflow-wrap:anywhere">Detail: ${esc(S.lastErr)}</span>` : ""}</div>`);
   if (S.mode === "db" && isLead() && S.members.some(m => m.demo)) parts.push(`<div class="banner">Data contoh sedang aktif. <button class="btn sm" data-act="clear-demo">Hapus data contoh</button></div>`);
   $("#banner").innerHTML = parts.join("");
 }
@@ -930,14 +930,14 @@ async function boot(session) {
   await fetchTable("profiles");
   await Promise.all(["members", "tasks", "settings", "logs"].map(fetchTable));
   clearTimeout(timer);
-  if (loaded()) S.stale = false;
+  if (loaded() && !S.lastErr) S.stale = false;
   setRoute(); refresh();
   channel = sb.channel("teamsync-" + Math.random().toString(36).slice(2));
   for (const [t, k] of [["members", "members"], ["tasks", "tasks"], ["activity_logs", "logs"], ["settings", "settings"], ["profiles", "profiles"]])
     channel.on("postgres_changes", { event: "*", schema: "public", table: t }, () => queue(k));
   channel.subscribe(status => {
     if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") { S.stale = true; renderBanner(); }
-    else if (status === "SUBSCRIBED" && S.stale) { S.stale = false; ["profiles", "members", "tasks", "logs", "settings"].forEach(queue); }
+    else if (status === "SUBSCRIBED" && S.stale) { S.stale = false; S.lastErr = ""; ["profiles", "members", "tasks", "logs", "settings"].forEach(queue); }
   });
 }
 function teardown() {

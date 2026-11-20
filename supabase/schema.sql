@@ -111,6 +111,8 @@ create trigger on_auth_user_created after insert on auth.users
 create or replace function public.guard_profile() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
+  -- dijalankan dari SQL Editor / admin (tanpa pengguna login): tidak dibatasi
+  if auth.uid() is null then return new; end if;
   if new.role is distinct from old.role then
     if not public.is_lead() then
       raise exception 'Hanya Team Lead yang dapat mengubah peran';
@@ -255,6 +257,31 @@ drop policy if exists settings_lead_write on public.settings;
 create policy settings_lead_write on public.settings for update to authenticated using (public.is_lead()) with check (public.is_lead());
 drop policy if exists settings_lead_insert on public.settings;
 create policy settings_lead_insert on public.settings for insert to authenticated with check (public.is_lead());
+
+-- ---------------------------------------------------------------------
+-- Hak akses API (diperlukan jika proyek tidak otomatis mengekspos tabel baru)
+-- RLS di atas tetap membatasi baris dan aksi yang boleh dilakukan.
+-- ---------------------------------------------------------------------
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on public.members, public.profiles, public.tasks, public.activity_logs, public.settings to authenticated;
+grant usage, select on sequence public.activity_logs_id_seq to authenticated;
+grant execute on function public.is_lead() to authenticated;
+grant execute on function public.my_member_id() to authenticated;
+
+-- ---------------------------------------------------------------------
+-- Akun yang mendaftar sebelum skrip ini dijalankan: buatkan profilnya,
+-- dan jadikan akun paling awal sebagai Team Lead bila belum ada.
+-- ---------------------------------------------------------------------
+insert into public.profiles (id, email, display_name, role)
+select u.id, u.email,
+       coalesce(nullif(u.raw_user_meta_data->>'display_name', ''), split_part(u.email, '@', 1)),
+       'member'
+from auth.users u
+where not exists (select 1 from public.profiles p where p.id = u.id);
+
+update public.profiles set role = 'lead'
+where id = (select p.id from public.profiles p join auth.users u on u.id = p.id order by u.created_at limit 1)
+  and not exists (select 1 from public.profiles where role = 'lead');
 
 -- ---------------------------------------------------------------------
 -- Realtime: perubahan dikirim langsung ke semua browser yang terbuka
