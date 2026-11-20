@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>TeamSync</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: fixed left rail (nav + identity) beside a scrolling workspace; rail folds into a top bar on phones. */
+:root {
+  --bg: #f3f4f8;
+  --surface: #ffffff;
+  --surface-2: #eceef5;
+  --ink: #161a2c;
+  --muted: #5b6179;
+  --line: #dcdfea;
+  --accent: #2f4bd1;
+  --accent-ink: #ffffff;
+  --accent-soft: #e4e8ff;
+  --track: #e4e6ef;
+  --ok: #1d8a4b;
+  --ok-soft: #dcf3e5;
+  --warn: #b97c00;
+  --warn-soft: #fbefd2;
+  --crit: #cf3333;
+  --crit-soft: #fbe0e0;
+  --shadow: 0 1px 2px rgba(22,26,44,.06), 0 4px 16px rgba(22,26,44,.05);
+  --f-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1120; --surface: #161a2b; --surface-2: #1e2337; --ink: #e8eaf4; --muted: #9ba1bb;
+    --line: #2b3148; --accent: #8197ff; --accent-ink: #0e1120; --accent-soft: #232b55; --track: #262c43;
+    --ok: #43c47b; --ok-soft: #173326; --warn: #e8b23e; --warn-soft: #3a2e12; --crit: #ff6b6b; --crit-soft: #3d1b1f;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1120; --surface: #161a2b; --surface-2: #1e2337; --ink: #e8eaf4; --muted: #9ba1bb;
+  --line: #2b3148; --accent: #8197ff; --accent-ink: #0e1120; --accent-soft: #232b55; --track: #262c43;
+  --ok: #43c47b; --ok-soft: #173326; --warn: #e8b23e; --warn-soft: #3a2e12; --crit: #ff6b6b; --crit-soft: #3d1b1f;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.5; }
+h1, h2, h3, h4 { font-family: var(--f-display); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h1 { font-size: 1.75rem; font-weight: 800; }
+h2 { font-size: 1.15rem; font-weight: 700; }
+h3 { font-size: 1rem; font-weight: 700; }
+p { margin: 0; }
+.num, .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.eyebrow { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--accent); }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* App frame */
+.app { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100vh; }
+.side { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 24px; padding-block: 24px; padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: 18px; background: var(--surface); border-right: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 800; font-size: 1.2rem; }
+.brand small { display: block; font-size: .68rem; font-weight: 600; color: var(--muted); letter-spacing: .04em; }
+.nav { display: flex; flex-direction: column; gap: 4px; }
+.nav a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; color: var(--muted); text-decoration: none; font-weight: 600; white-space: nowrap; }
+.nav a:hover { background: var(--surface-2); color: var(--ink); }
+.nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+.nav svg { width: 18px; height: 18px; flex: none; }
+.nav .count { margin-left: auto; background: var(--crit); color: #fff; font-size: .7rem; font-family: var(--f-mono); border-radius: 10px; padding: 0 7px; }
+.side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; font-size: .82rem; }
+.whobox { background: var(--surface-2); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.whobox > label:not(.switch) { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.role-tag { display: inline-flex; align-self: flex-start; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: var(--accent); color: var(--accent-ink); }
+.role-tag.member { background: var(--ok-soft); color: var(--ok); }
+.role-tag.viewer { background: var(--track); color: var(--muted); }
+.switch { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: .8rem; }
+.switch input { accent-color: var(--accent); }
+
+.main { min-width: 0; padding-block: 28px 64px; padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 20px; }
+.view { display: flex; flex-direction: column; gap: 24px; max-width: 1240px; width: 100%; }
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.page-head > div:first-child { display: flex; flex-direction: column; gap: 4px; }
+.page-head p.lede { color: var(--muted); max-width: 62ch; }
+
+.banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 14px; border-radius: 10px; background: var(--accent-soft); color: var(--ink); font-size: .86rem; max-width: 1240px; }
+.banner.warn { background: var(--warn-soft); }
+.banner b { font-weight: 700; }
+
+/* Buttons & inputs */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--crit); border-color: color-mix(in srgb, var(--crit) 40%, var(--line)); }
+.btn.danger.armed { background: var(--crit); color: #fff; }
+.btn.warn { background: var(--warn); border-color: var(--warn); color: #1b1300; }
+.btn.sm { padding: 4px 10px; font-size: .8rem; border-radius: 6px; }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field > span { font-size: .78rem; font-weight: 700; color: var(--muted); }
+.field small { color: var(--muted); font-size: .76rem; }
+input[type=text], input[type=number], input[type=date], input[type=search], select, textarea {
+  width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); min-width: 0;
+}
+textarea { resize: vertical; min-height: 64px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+
+.seg { display: inline-flex; flex-wrap: wrap; background: var(--surface-2); border-radius: 9px; padding: 3px; gap: 2px; }
+.seg label, .seg button { position: relative; padding: 6px 12px; border-radius: 7px; cursor: pointer; font-weight: 600; font-size: .82rem; color: var(--muted); border: 0; background: transparent; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label:has(input:checked), .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--accent); }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+
+/* Pills */
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--track); color: var(--muted); white-space: nowrap; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.crit { background: var(--crit-soft); color: var(--crit); }
+.pill.plain::before { display: none; }
+
+/* KPIs */
+.kpis { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+.kpi .k-label { font-size: .74rem; font-weight: 700; color: var(--muted); }
+.kpi .k-val { font-family: var(--f-mono); font-size: 1.6rem; font-weight: 600; letter-spacing: -.02em; }
+.kpi .k-sub { font-size: .76rem; color: var(--muted); }
+.kpi.crit .k-val { color: var(--crit); }
+.kpi.warn .k-val { color: var(--warn); }
+
+/* Capacity meter: scale runs 0–120% so overload stays visible */
+.meter { position: relative; padding-bottom: 14px; }
+.meter .track { position: relative; height: 12px; border-radius: 6px; background: var(--track); overflow: hidden; }
+.meter .fill { position: absolute; top: 0; bottom: 0; left: 0; transition: width .4s ease, left .4s ease; }
+.meter .fill.pic { background: var(--c); }
+.meter .fill.bak { background: repeating-linear-gradient(135deg, var(--c) 0 3px, transparent 3px 6px); opacity: .75; }
+.meter .fill.add { background: repeating-linear-gradient(90deg, var(--accent) 0 2px, transparent 2px 4px); outline: 1.5px solid var(--accent); outline-offset: -1.5px; }
+.meter .tick { position: absolute; top: -3px; height: 18px; width: 0; border-left: 1.5px dashed var(--muted); }
+.meter .tick.red { border-left-color: var(--crit); }
+.meter .tick-l { position: absolute; top: 16px; transform: translateX(-50%); font-family: var(--f-mono); font-size: .62rem; color: var(--muted); }
+.lv-green { --c: var(--ok); }
+.lv-yellow { --c: var(--warn); }
+.lv-red { --c: var(--crit); }
+.meter.slim .track { height: 8px; }
+.meter.slim { padding-bottom: 0; }
+.meter.slim .tick { height: 14px; }
+
+/* Member cards */
+.members-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.mcard { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; position: relative; }
+.mcard.lv-red { border-color: color-mix(in srgb, var(--crit) 55%, var(--line)); }
+.mc-top { display: flex; align-items: center; gap: 10px; }
+.mc-top > div { min-width: 0; flex: 1; }
+.mc-top h3 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-top p { font-size: .78rem; color: var(--muted); }
+.avatar { width: 36px; height: 36px; flex: none; border-radius: 10px; display: grid; place-items: center; font-weight: 800; font-size: .8rem; color: #fff; background: var(--av, var(--accent)); }
+.avatar.sm { width: 24px; height: 24px; border-radius: 7px; font-size: .62rem; }
+.mc-nums { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.mc-nums .big { font-family: var(--f-mono); font-size: 1.5rem; font-weight: 600; color: var(--c); }
+.mc-nums span { font-family: var(--f-mono); font-size: .8rem; color: var(--muted); }
+.mc-break { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .78rem; color: var(--muted); }
+.mc-break b { color: var(--ink); font-family: var(--f-mono); font-weight: 600; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; background: var(--c, var(--muted)); }
+.swatch.striped { background: repeating-linear-gradient(135deg, var(--c, var(--muted)) 0 2px, transparent 2px 4px); outline: 1px solid var(--c, var(--muted)); outline-offset: -1px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .78rem; color: var(--muted); }
+
+/* Alerts */
+.alerts { display: flex; flex-direction: column; gap: 10px; }
+.alert { border: 1px solid color-mix(in srgb, var(--crit) 45%, var(--line)); background: var(--crit-soft); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.alert.warn { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); background: var(--warn-soft); }
+.alert-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.alert-head h3 { font-size: .95rem; }
+.alert-task { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; background: var(--surface); border-radius: 9px; padding: 10px 12px; }
+.alert-task .t { min-width: 0; flex: 1 1 260px; }
+.alert-task .t b { display: block; }
+.alert-task .t small { color: var(--muted); }
+
+/* Board */
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.toolbar input[type=search] { max-width: 260px; }
+.toolbar select { width: auto; }
+.board { display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+.col { background: var(--surface-2); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 160px; }
+.col-head { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; font-weight: 700; font-size: .84rem; }
+.col-head .num { color: var(--muted); font-size: .76rem; }
+.tcard { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; text-align: left; }
+.tcard:hover { border-color: var(--accent); }
+.tcard.flag { border-left: 3px solid var(--crit); }
+.tcard h4 { font-size: .9rem; font-weight: 700; line-height: 1.35; }
+.tmeta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: .74rem; color: var(--muted); }
+.wbadge { font-family: var(--f-mono); font-weight: 600; font-size: .72rem; padding: 1px 7px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); }
+.people { display: flex; flex-wrap: wrap; gap: 6px; font-size: .76rem; }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px 2px 2px; border-radius: 999px; background: var(--surface-2); font-weight: 600; }
+.chip .avatar { width: 18px; height: 18px; border-radius: 50%; font-size: .55rem; }
+.chip.bak { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
+.tcard select { padding: 4px 8px; font-size: .78rem; }
+.due.late { color: var(--crit); font-weight: 700; }
+.due.soon { color: var(--warn); font-weight: 700; }
+
+/* Composer */
+.composer { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; }
+.calc { background: var(--surface-2); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+.calc .wt { display: flex; align-items: baseline; gap: 8px; }
+.calc .wt .num { font-size: 2.4rem; font-weight: 600; color: var(--accent); line-height: 1; }
+.calc .formula { font-family: var(--f-mono); font-size: .76rem; color: var(--muted); overflow-wrap: anywhere; }
+.rec-list { display: flex; flex-direction: column; gap: 8px; }
+.rec { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 6px 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.rec.sel-pic { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.rec.sel-bak { border-style: dashed; border-color: var(--accent); }
+.rec .who b { display: block; }
+.rec .who small { color: var(--muted); font-size: .74rem; }
+.rec .acts { display: flex; gap: 4px; }
+.rec .acts .btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.rec .meter { grid-column: 1 / -1; }
+.rec .proj { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .74rem; color: var(--muted); }
+.rank { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); width: 18px; }
+.summary { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 14px; }
+.summary .who-line { font-size: .86rem; }
+.error-text { color: var(--crit); font-size: .82rem; font-weight: 600; }
+
+/* Tables */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); white-space: nowrap; }
+td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+td.n, th.n { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.namecell { display: flex; align-items: center; gap: 10px; min-width: 160px; }
+.namecell small { display: block; color: var(--muted); font-size: .74rem; }
+
+/* Log */
+.log { display: flex; flex-direction: column; }
+.log-item { display: grid; grid-template-columns: 12px minmax(0,1fr) auto; gap: 12px; padding: 10px 2px; border-bottom: 1px solid var(--line); align-items: start; }
+.log-item:last-child { border-bottom: 0; }
+.log-item .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; background: var(--muted); }
+.log-item .dot.task_new { background: var(--accent); }
+.log-item .dot.status { background: var(--ok); }
+.log-item .dot.handover { background: var(--crit); }
+.log-item .dot.member { background: var(--warn); }
+.log-item time { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); white-space: nowrap; }
+.log-item .actor { color: var(--muted); font-size: .76rem; }
+
+/* Chart */
+.chart svg { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--muted); font-family: var(--f-mono); font-size: 11px; }
+.chart text.lbl { fill: var(--ink); font-family: var(--f-body); font-size: 12px; font-weight: 600; }
+.chart .grid { stroke: var(--line); }
+.chart .bar { fill: var(--accent); }
+.chart .bar2 { fill: var(--ok); }
+
+.empty { text-align: center; padding: 40px 20px; border: 1.5px dashed var(--line); border-radius: 14px; display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--muted); }
+.empty h2 { color: var(--ink); }
+.empty .row { justify-content: center; }
+.col .empty-col { color: var(--muted); font-size: .78rem; padding: 10px 6px; }
+.note { font-size: .78rem; color: var(--muted); }
+
+/* Modal */
+.modal-bg { position: fixed; inset: 0; background: rgba(10,12,24,.5); z-index: 50; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.modal { width: min(620px, 100%); max-height: 100%; overflow-y: auto; background: var(--surface); border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.modal-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.modal-foot { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 14px; }
+.modal-foot .row { gap: 8px; }
+.kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.kv div { background: var(--surface-2); border-radius: 9px; padding: 8px 10px; }
+.kv dt { font-size: .7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.kv dd { margin: 0; font-weight: 600; }
+dl { margin: 0; }
+
+/* Toasts */
+.toasts { position: fixed; z-index: 60; right: max(16px, env(safe-area-inset-right, 0px)); bottom: max(16px, env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 8px; width: min(360px, calc(100vw - 32px)); }
+.toast { background: var(--ink); color: var(--bg); border-radius: 10px; padding: 12px 14px; font-size: .84rem; box-shadow: 0 10px 30px rgba(0,0,0,.25); display: flex; gap: 10px; align-items: flex-start; animation: tin .25s ease; }
+.toast.crit { border-left: 4px solid var(--crit); }
+.toast.ok { border-left: 4px solid var(--ok); }
+.toast .x { margin-left: auto; background: none; border: 0; color: inherit; opacity: .7; cursor: pointer; }
+@keyframes tin { from { transform: translateY(8px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, minmax(0,1fr)); } .composer { grid-template-columns: minmax(0,1fr); } }
+@media (max-width: 820px) {
+  .app { grid-template-columns: minmax(0,1fr); }
+  .side { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-right: 0; border-bottom: 1px solid var(--line); }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 21; background: var(--surface); }
+  .nav { flex-direction: row; order: 3; width: 100%; overflow-x: auto; gap: 2px; }
+  .nav a { padding: 7px 10px; }
+  .side-foot { margin: 0 0 0 auto; }
+  .whobox { padding: 6px 10px; flex-direction: row; align-items: center; flex-wrap: wrap; }
+  .whobox label, .whobox .switch, .whobox .claim-wrap { display: none; }
+  .main { padding-block: 18px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .grid2, .grid3 { grid-template-columns: minmax(0,1fr); }
+  h1 { font-size: 1.4rem; }
+  .board { grid-template-columns: repeat(4, minmax(240px, 82vw)); }
+}
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="8" fill="var(--accent)"/><rect x="6" y="8" width="18" height="3.4" rx="1.7" fill="var(--accent-ink)" opacity=".45"/><rect x="6" y="8" width="11" height="3.4" rx="1.7" fill="var(--accent-ink)"/><rect x="6" y="13.3" width="18" height="3.4" rx="1.7" fill="var(--accent-ink)" opacity=".45"/><rect x="6" y="13.3" width="15" height="3.4" rx="1.7" fill="var(--accent-ink)"/><rect x="6" y="18.6" width="18" height="3.4" rx="1.7" fill="var(--accent-ink)" opacity=".45"/><rect x="6" y="18.6" width="7" height="3.4" rx="1.7" fill="var(--accent-ink)"/></svg>
+      <div>TeamSync<small>Beban kerja yang adil</small></div>
+    </div>
+    <nav class="nav" id="nav" aria-label="Navigasi utama">
+      <a href="#dashboard" data-route="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard<span class="count" id="nav-alerts" hidden>0</span></a>
+      <a href="#tugas" data-route="tugas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>Papan Tugas</a>
+      <a href="#tim" data-route="tim"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17 14.6c2.4.2 4 1.8 4.5 4.4"/></svg>Tim &amp; Kapasitas</a>
+      <a href="#laporan" data-route="laporan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Log &amp; Laporan</a>
+    </nav>
+    <div class="side-foot" id="who"></div>
+  </aside>
+  <main class="main">
+    <div id="banner"></div>
+    <div class="view" id="view"></div>
+  </main>
+</div>
+<div id="modal" hidden></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+(() => {
+"use strict";
+/* ---------- Konstanta & util ---------- */
+const DEFAULT_CFG = { yellow: 70, red: 90, backupFactor: 0.2, kCoef: 0.25, uCoef: 0.15, caps: { Junior: 100, Middle: 125, Senior: 150, Lead: 120 } };
+const LEVELS = ["Junior", "Middle", "Senior", "Lead"];
+const STATUSES = ["Aktif", "Cuti", "Sakit", "Izin"];
+const TSTAT = [["todo", "To Do"], ["progress", "In Progress"], ["review", "Review"], ["done", "Done"]];
+const TLABEL = Object.fromEntries(TSTAT);
+const KLAB = ["", "Sangat mudah", "Mudah", "Sedang", "Sulit", "Sangat sulit"];
+const ULAB = ["", "Longgar", "Normal", "Penting", "Mendesak", "Kritis"];
+const AV = ["#2f4bd1", "#0f8b8d", "#b4498a", "#c26a12", "#5b6dd8", "#2c8a4f", "#8a4fd1", "#c23b4b", "#3b7bbf", "#7b8a1f"];
+
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const rid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const ymd = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const shift = n => { const d = new Date(); d.setDate(d.getDate() + n); return d; };
+const r1 = n => Math.round(n * 10) / 10;
+const pctTxt = n => Math.round(n) + "%";
+const initials = n => String(n || "?").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+const avColor = id => { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return AV[h % AV.length]; };
+function dayDiff(dl) { if (!dl) return null; const a = new Date(dl + "T00:00:00"); const b = new Date(ymd(new Date()) + "T00:00:00"); return Math.round((a - b) / 864e5); }
+function fmtDate(s) { if (!s) return "—"; const d = s.length <= 10 ? new Date(s + "T00:00:00") : new Date(s); return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined }); }
+function fmtTime(s) { const d = new Date(s); return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" }) + " " + d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }); }
+function dueLabel(dl) { const d = dayDiff(dl); if (d === null) return ["", ""]; if (d < 0) return ["Terlambat " + -d + " hari", "late"]; if (d === 0) return ["Hari ini", "soon"]; if (d === 1) return ["Besok", "soon"]; return [d + " hari lagi", d <= 3 ? "soon" : ""]; }
+
+/* ---------- Rumus ---------- */
+function urgencyFromDeadline(dl) { const d = dayDiff(dl); if (d === null) return 2; if (d <= 1) return 5; if (d <= 3) return 4; if (d <= 7) return 3; if (d <= 14) return 2; return 1; }
+function factors(k, u) { const c = S.cfg; return { kf: 1 + c.kCoef * (k - 1), uf: 1 + c.uCoef * (u - 1) }; }
+function weightOf(k, u, h) { const { kf, uf } = factors(k, u); return Math.max(1, Math.round(h * kf * uf)); }
+function level(p) { return p > S.cfg.red ? "red" : p >= S.cfg.yellow ? "yellow" : "green"; }
+const LV_TXT = { green: "Aman", yellow: "Mendekati batas", red: "Overload" };
+const LV_PILL = { green: "ok", yellow: "warn", red: "crit" };
+
+/* ---------- State ---------- */
+const S = {
+  mode: "loading", members: [], tasks: [], logs: [], claims: {}, cfg: structuredClone(DEFAULT_CFG),
+  loads: {}, alerts: [], me: { id: null, isLead: false, canWrite: true }, asMember: false,
+  route: "dashboard", composerOpen: false, draft: null, filters: { q: "", member: "", mine: false },
+  period: 30, logType: "", ready: { members: false, tasks: false }, stale: false, seenAlerts: null, readOnlyHit: false
+};
+let db = null, user = null;
+const mem = id => S.members.find(m => m.id === id);
+const nm = id => mem(id)?.name || "—";
+const myMemberId = () => S.me.id ? S.claims[S.me.id] || null : (S.mode === "local" ? S.localClaim || null : null);
+const isLead = () => S.me.isLead && !S.asMember;
+const canWrite = () => S.me.canWrite && !S.readOnlyHit;
+const canProgress = t => canWrite() && (isLead() || [t.picId, t.backupId].includes(myMemberId()));
+
+function compute() {
+  const L = {};
+  for (const m of S.members) L[m.id] = { pic: 0, bak: 0, picN: 0, bakN: 0 };
+  for (const t of S.tasks) {
+    if (t.status === "done") continue;
+    if (L[t.picId]) { L[t.picId].pic += t.weight || 0; L[t.picId].picN++; }
+    if (t.backupId && L[t.backupId]) { L[t.backupId].bak += (t.weight || 0) * S.cfg.backupFactor; L[t.backupId].bakN++; }
+  }
+  for (const m of S.members) { const x = L[m.id]; x.total = x.pic + x.bak; x.pct = m.capacity ? x.total / m.capacity * 100 : 0; x.level = level(x.pct); }
+  S.loads = L;
+  // eskalasi
+  const groups = {};
+  for (const t of S.tasks) {
+    if (t.status === "done") continue;
+    const p = mem(t.picId); if (!p) continue;
+    const reasons = [];
+    if (p.status && p.status !== "Aktif") reasons.push("PIC sedang " + p.status);
+    if (L[p.id].pct > S.cfg.red) reasons.push("beban PIC " + pctTxt(L[p.id].pct));
+    if (!reasons.length) continue;
+    (groups[p.id] ||= { p, absent: p.status !== "Aktif", tasks: [] }).tasks.push({ t, reasons });
+  }
+  S.alerts = Object.values(groups).sort((a, b) => b.absent - a.absent);
+}
+const alertTasks = () => S.alerts.flatMap(g => g.tasks);
+
+function rankPIC(weight, k, exclude = []) {
+  return S.members.filter(m => !exclude.includes(m.id)).map(m => {
+    const L = S.loads[m.id] || { total: 0, pct: 0 };
+    const after = m.capacity ? (L.total + weight) / m.capacity * 100 : 999;
+    let score = after; const notes = [];
+    if (m.status !== "Aktif") { score += 1000; notes.push("sedang " + m.status); }
+    if (after > S.cfg.red) { score += 200; notes.push("akan melewati batas merah"); }
+    if (k >= 4 && m.level === "Junior") { score += 20; notes.push("kompleksitas tinggi untuk Junior"); }
+    if (k >= 4 && (m.level === "Senior" || m.level === "Lead")) { score -= 8; notes.push("pengalaman sesuai kompleksitas"); }
+    if (k <= 2 && m.level === "Senior") { score += 6; notes.push("tugas ringan, Senior disimpan untuk tugas sulit"); }
+    if (!notes.length) notes.push(after < S.cfg.yellow ? "kapasitas tersisa lega" : "masih di bawah batas merah");
+    return { m, L, after, score, notes };
+  }).sort((a, b) => a.score - b.score);
+}
+function rankBackup(weight, k, exclude = []) {
+  const w = weight * S.cfg.backupFactor;
+  return S.members.filter(m => !exclude.includes(m.id)).map(m => {
+    const L = S.loads[m.id] || { total: 0, pct: 0 };
+    const after = m.capacity ? (L.total + w) / m.capacity * 100 : 999;
+    // backup harus mampu mengambil alih bobot penuh
+    const takeover = m.capacity ? (L.total + weight) / m.capacity * 100 : 999;
+    let score = takeover; if (m.status !== "Aktif") score += 1000; if (k >= 4 && m.level === "Junior") score += 15;
+    return { m, L, after, takeover, score };
+  }).sort((a, b) => a.score - b.score);
+}
+
+/* ---------- Penyimpanan (db bersama, atau memori untuk pratinjau) ---------- */
+const local = { members: new Map(), tasks: new Map(), logs: new Map(), claims: new Map() };
+function syncLocal() {
+  S.members = [...local.members.values()]; S.tasks = [...local.tasks.values()];
+  S.logs = [...local.logs.values()].sort((a, b) => b.at.localeCompare(a.at));
+  refresh();
+}
+async function guard(p) {
+  try { return await p; }
+  catch (e) {
+    const code = e && e.code;
+    if (code === "invalid_argument") { S.readOnlyHit = true; toast("Perubahan tidak tersimpan: akses Anda hanya untuk melihat.", "crit"); refresh(); }
+    else if (code === "quota_exceeded") toast("Penyimpanan penuh. Hapus tugas atau log lama, lalu coba lagi.", "crit");
+    else if (code === "resource_exhausted") toast("Terlalu banyak perubahan sekaligus. Tunggu sebentar lalu coba lagi.", "crit");
+    else toast("Gagal menyimpan (" + (code || "galat") + "). Periksa koneksi lalu coba lagi.", "crit");
+    throw e;
+  }
+}
+async function put(col, id, data) {
+  if (db) return guard(db.doc(col + "/" + id).set(data));
+  if (col === "settings") { S.cfg = mergeCfg(data); return refresh(); }
+  local[col].set(id, { id, ...data }); syncLocal();
+}
+async function patch(col, id, data) {
+  if (db) return guard(db.doc(col + "/" + id).update(data));
+  const cur = local[col].get(id); if (cur) local[col].set(id, { ...cur, ...data }); syncLocal();
+}
+async function del(col, id) {
+  if (db) return guard(db.doc(col + "/" + id).delete());
+  local[col].delete(id); syncLocal();
+}
+async function log(type, text, extra = {}) {
+  const e = { at: new Date().toISOString(), type, text, by: S.me.id || null, byMember: myMemberId(), ...extra };
+  try { await put("logs", rid("l"), e); } catch {}
+}
+function mergeCfg(d) { const c = structuredClone(DEFAULT_CFG); if (d) { Object.assign(c, d); c.caps = { ...DEFAULT_CFG.caps, ...(d.caps || {}) }; } return c; }
+
+/* ---------- Data contoh ---------- */
+function demoData() {
+  const iso = (dOff, h = 10) => { const d = shift(dOff); d.setHours(h, 15, 0, 0); return d.toISOString(); };
+  const M = [
+    ["m_rina", "Rina Kartika", "Senior", "Backend, Arsitektur", "Aktif"],
+    ["m_dimas", "Dimas Prasetyo", "Middle", "Frontend, UI", "Aktif"],
+    ["m_sari", "Sari Wulandari", "Junior", "QA, Dokumentasi", "Aktif"],
+    ["m_bayu", "Bayu Nugroho", "Senior", "Data, Integrasi", "Cuti"],
+    ["m_ayu", "Ayu Lestari", "Junior", "Frontend", "Aktif"],
+    ["m_fajar", "Fajar Hidayat", "Middle", "Backend, Payment", "Aktif"]
+  ].map(([id, name, lv, skills, status]) => ({ id, name, level: lv, capacity: DEFAULT_CFG.caps[lv], skills, status, demo: true, createdAt: iso(-40) }));
+  const T = [];
+  const mk = (title, k, u, h, dl, pic, bak, status, cr, done, extra = {}) => T.push({
+    id: rid("t"), title, desc: "", complexity: k, urgency: u, urgencyMode: "manual", hours: h, deadline: ymd(shift(dl)),
+    weight: weightOf(k, u, h), picId: pic, backupId: bak, status, createdAt: iso(cr, 9), doneAt: done != null ? iso(done, 16) : null,
+    handovers: [], demo: true, ...extra
+  });
+  mk("Integrasi payment gateway", 5, 4, 24, 3, "m_fajar", "m_rina", "progress", -6);
+  mk("Refactor modul notifikasi", 4, 3, 16, 6, "m_fajar", "m_dimas", "todo", -3);
+  mk("Perbaikan bug checkout", 3, 5, 6, 1, "m_fajar", "m_sari", "progress", -1);
+  mk("Pipeline laporan bulanan", 4, 3, 12, 5, "m_bayu", "m_rina", "progress", -8);
+  mk("Desain skema database v2", 4, 2, 20, 9, "m_rina", "m_fajar", "progress", -5);
+  mk("Review keamanan API", 3, 3, 8, 4, "m_rina", "m_bayu", "review", -7);
+  mk("Halaman dashboard admin", 3, 3, 16, 7, "m_dimas", "m_ayu", "progress", -4);
+  mk("Komponen form reusable", 2, 2, 10, 12, "m_dimas", "m_sari", "todo", -2);
+  mk("Redesign alur onboarding", 3, 4, 14, 3, "m_dimas", "m_ayu", "todo", -2);
+  mk("Audit aksesibilitas", 2, 2, 6, 10, "m_dimas", "m_ayu", "todo", -1);
+  mk("Test case modul checkout", 2, 4, 8, 2, "m_sari", "m_dimas", "progress", -3);
+  mk("Dokumentasi API publik", 2, 2, 10, 8, "m_sari", "m_rina", "todo", -2);
+  mk("Landing page kampanye", 2, 3, 12, 6, "m_ayu", "m_dimas", "progress", -4);
+  mk("Setup CI/CD", 4, 3, 12, -10, "m_rina", "m_fajar", "done", -20, -12);
+  mk("Migrasi server staging", 4, 4, 16, -8, "m_fajar", "m_rina", "done", -18, -6, { handovers: [{ from: "m_bayu", to: "m_fajar", at: iso(-9, 11), reason: "PIC sedang Cuti" }] });
+  mk("Halaman login", 2, 3, 8, -14, "m_dimas", "m_ayu", "done", -22, -15);
+  mk("Uji regresi sprint 14", 2, 4, 10, -3, "m_sari", "m_ayu", "done", -10, -4);
+  mk("Ikon & ilustrasi fitur baru", 1, 2, 6, -2, "m_ayu", "m_dimas", "done", -9, -3);
+  mk("Optimasi query laporan", 3, 3, 10, -15, "m_bayu", "m_rina", "done", -25, -16);
+  mk("Perbaikan tampilan mobile", 2, 3, 8, -21, "m_ayu", "m_dimas", "done", -28, -20);
+  mk("Seeder data uji", 2, 2, 6, -12, "m_sari", "m_dimas", "done", -19, -13);
+  const L = [];
+  const lg = (at, type, text, extra = {}) => L.push({ id: rid("l"), at, type, text, by: null, byMember: null, demo: true, ...extra });
+  for (const t of T) {
+    lg(t.createdAt, "task_new", `Tugas baru "${t.title}" (${t.weight} poin) ditetapkan ke ${M.find(m => m.id === t.picId).name}, backup ${M.find(m => m.id === t.backupId).name}.`, { taskId: t.id });
+    if (t.doneAt) lg(t.doneAt, "status", `"${t.title}" dipindahkan ke Done.`, { taskId: t.id, byMember: t.picId });
+  }
+  lg(iso(-9, 11), "handover", `Handover: "Migrasi server staging" dialihkan dari Bayu Nugroho ke Fajar Hidayat (PIC sedang Cuti).`);
+  lg(iso(-1, 8), "member", "Status Bayu Nugroho berubah: Aktif → Cuti.");
+  return { M, T, L };
+}
+async function loadDemo() {
+  const { M, T, L } = demoData();
+  if (!db) { M.forEach(m => local.members.set(m.id, m)); T.forEach(t => local.tasks.set(t.id, t)); L.forEach(l => local.logs.set(l.id, l)); syncLocal(); return; }
+  const jobs = [...M.map(m => ["members", m]), ...T.map(t => ["tasks", t]), ...L.map(l => ["logs", l])];
+  toast("Memuat data contoh…");
+  try {
+    for (let i = 0; i < jobs.length; i += 4) await Promise.all(jobs.slice(i, i + 4).map(([c, d]) => { const { id, ...rest } = d; return put(c, id, rest); }));
+    toast("Data contoh dimuat. Hapus kapan saja dari halaman Tim.", "ok");
+  } catch {}
+}
+async function clearDemo() {
+  const jobs = [...S.members.filter(m => m.demo).map(m => ["members", m.id]), ...S.tasks.filter(t => t.demo).map(t => ["tasks", t.id]), ...S.logs.filter(l => l.demo).map(l => ["logs", l.id])];
+  try { for (let i = 0; i < jobs.length; i += 4) await Promise.all(jobs.slice(i, i + 4).map(([c, id]) => del(c, id))); toast("Data contoh dihapus.", "ok"); } catch {}
+}
+
+/* ---------- Render: kerangka ---------- */
+function refresh() {
+  compute();
+  notifyAlerts();
+  renderWho(); renderBanner(); renderNavCount();
+  VIEWS[S.route]?.update();
+}
+function setRoute() {
+  const r = (location.hash || "#dashboard").slice(1);
+  S.route = VIEWS[r] ? r : "dashboard";
+  document.querySelectorAll("#nav a").forEach(a => a.toggleAttribute("aria-current", a.dataset.route === S.route) || a.setAttribute("aria-current", a.dataset.route === S.route ? "page" : ""));
+  document.querySelectorAll("#nav a").forEach(a => { if (a.dataset.route === S.route) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  $("#view").innerHTML = VIEWS[S.route].mount();
+  VIEWS[S.route].update();
+  window.scrollTo(0, 0);
+}
+function renderNavCount() { const n = alertTasks().length; const el = $("#nav-alerts"); el.hidden = !n; el.textContent = n; }
+function renderWho() {
+  const me = myMemberId(); const lead = S.me.isLead;
+  const roleTxt = !canWrite() ? ["Lihat saja", "viewer"] : isLead() ? ["Team Lead", ""] : ["Anggota", "member"];
+  const opts = S.members.map(m => `<option value="${esc(m.id)}" ${m.id === me ? "selected" : ""}>${esc(m.name)}</option>`).join("");
+  $("#who").innerHTML = `<div class="whobox">
+    <label>Peran Anda</label>
+    <span class="role-tag ${roleTxt[1]}">${roleTxt[0]}</span>
+    ${S.members.length && (S.me.id || S.mode === "local") ? `<div class="claim-wrap field"><span>Saya adalah</span><select id="claim-sel" aria-label="Pilih profil anggota Anda"><option value="">— pilih profil —</option>${opts}</select></div>` : ""}
+    ${lead ? `<label class="switch"><input type="checkbox" id="preview-member" ${S.asMember ? "checked" : ""}> Pratinjau tampilan anggota</label>` : ""}
+  </div>`;
+}
+function renderBanner() {
+  const parts = [];
+  if (S.mode === "local") parts.push(`<div class="banner"><b>Mode pratinjau.</b> Data contoh di memori dan tidak tersimpan. Buka artefak ini di claude.ai untuk data tim yang tersimpan dan dibagikan.</div>`);
+  if (S.stale) parts.push(`<div class="banner warn"><b>Data belum terjangkau.</b> Tampilan mungkin belum terbaru; sistem terus mencoba tersambung.</div>`);
+  if (S.mode === "db" && isLead() && S.members.some(m => m.demo)) parts.push(`<div class="banner">Data contoh sedang aktif. <button class="btn sm" data-act="clear-demo">Hapus data contoh</button></div>`);
+  $("#banner").innerHTML = parts.join("");
+}
+
+/* ---------- Komponen ---------- */
+function avatar(m, cls = "") { return `<span class="avatar ${cls}" style="--av:${avColor(m?.id || "x")}">${esc(initials(m?.name))}</span>`; }
+function meter(L, cap, add = 0, slim = false) {
+  const scale = 120, sc = v => Math.max(0, Math.min(v, scale)) / scale * 100;
+  const picP = cap ? L.pic / cap * 100 : 0, bakP = cap ? L.bak / cap * 100 : 0, addP = cap ? add / cap * 100 : 0;
+  const lv = level(picP + bakP + addP);
+  return `<div class="meter lv-${lv} ${slim ? "slim" : ""}" role="img" aria-label="Beban ${pctTxt(picP + bakP)} dari kapasitas">
+    <div class="track">
+      <div class="fill pic" style="width:${sc(picP)}%"></div>
+      <div class="fill bak" style="left:${sc(picP)}%;width:${sc(picP + bakP) - sc(picP)}%"></div>
+      ${add ? `<div class="fill add" style="left:${sc(picP + bakP)}%;width:${sc(picP + bakP + addP) - sc(picP + bakP)}%"></div>` : ""}
+    </div>
+    <i class="tick" style="left:${sc(S.cfg.yellow)}%"></i><i class="tick red" style="left:${sc(S.cfg.red)}%"></i>
+    ${slim ? "" : `<span class="tick-l" style="left:${sc(S.cfg.yellow)}%">${S.cfg.yellow}</span><span class="tick-l" style="left:${sc(S.cfg.red)}%">${S.cfg.red}</span><span class="tick-l" style="left:${sc(100)}%">100</span>`}
+  </div>`;
+}
+function statusPill(st) { const c = st === "Aktif" ? "ok" : st === "Sakit" ? "crit" : "warn"; return `<span class="pill ${c}">${esc(st || "Aktif")}</span>`; }
+function chip(m, bak = false) { if (!m) return `<span class="chip bak">— belum ada</span>`; return `<span class="chip ${bak ? "bak" : ""}" title="${bak ? "Backup" : "PIC"}: ${esc(m.name)}">${avatar(m)}${bak ? "Backup · " : ""}${esc(m.name.split(" ")[0])}</span>`; }
+function emptyTeam() {
+  return `<div class="empty">
+    <h2>Belum ada anggota tim</h2>
+    <p>${isLead() ? "Mulai dengan memasukkan profil anggota dan kapasitas maksimalnya. Setelah itu, sistem menghitung beban dan merekomendasikan penugasan." : "Team Lead belum memasukkan anggota tim. Halaman ini terisi otomatis setelahnya."}</p>
+    ${isLead() && canWrite() ? `<div class="row"><button class="btn primary" data-act="add-member">Tambah anggota</button><button class="btn" data-act="load-demo">Muat data contoh</button></div>` : ""}
+  </div>`;
+}
+function loadingBlock() { return `<div class="empty"><p>Memuat data tim…</p></div>`; }
+const loaded = () => S.mode === "local" || (S.ready.members && S.ready.tasks);
+
+/* ---------- View: Dashboard ---------- */
+const VIEWS = {};
+VIEWS.dashboard = {
+  mount: () => `
+    <header class="page-head">
+      <div><p class="eyebrow">Dashboard kapasitas</p><h1>Beban kerja tim, real-time</h1>
+      <p class="lede">Setiap tugas aktif langsung dihitung terhadap kapasitas personal. Garis putus-putus menandai ambang kuning dan merah.</p></div>
+      <div class="legend" id="dash-legend"></div>
+    </header>
+    <section class="kpis" id="dash-kpis"></section>
+    <section id="dash-alerts" class="alerts"></section>
+    <section class="members-grid" id="dash-members"></section>`,
+  update() {
+    $("#dash-legend").innerHTML = `<span><i class="swatch lv-green"></i>Aman &lt; ${S.cfg.yellow}%</span><span><i class="swatch lv-yellow"></i>Mendekati ${S.cfg.yellow}–${S.cfg.red}%</span><span><i class="swatch lv-red"></i>Overload &gt; ${S.cfg.red}%</span><span><i class="swatch striped"></i>Beban siaga backup (${Math.round(S.cfg.backupFactor * 100)}%)</span>`;
+    if (!loaded()) { $("#dash-members").innerHTML = loadingBlock(); $("#dash-kpis").innerHTML = ""; $("#dash-alerts").innerHTML = ""; return; }
+    if (!S.members.length) { $("#dash-kpis").innerHTML = ""; $("#dash-alerts").innerHTML = ""; $("#dash-members").innerHTML = emptyTeam(); $("#dash-members").style.display = "block"; return; }
+    $("#dash-members").style.display = "";
+    const act = S.members.filter(m => m.status === "Aktif");
+    const totLoad = S.members.reduce((s, m) => s + S.loads[m.id].total, 0), totCap = act.reduce((s, m) => s + (m.capacity || 0), 0);
+    const reds = S.members.filter(m => S.loads[m.id].level === "red").length, yel = S.members.filter(m => S.loads[m.id].level === "yellow").length;
+    const active = S.tasks.filter(t => t.status !== "done"), pts = active.reduce((s, t) => s + (t.weight || 0), 0);
+    const nAl = alertTasks().length;
+    const util = totCap ? totLoad / totCap * 100 : 0;
+    $("#dash-kpis").innerHTML = `
+      <div class="kpi ${util > S.cfg.red ? "crit" : util >= S.cfg.yellow ? "warn" : ""}"><span class="k-label">Utilisasi tim</span><span class="k-val">${pctTxt(util)}</span><span class="k-sub">${Math.round(totLoad)} / ${totCap} poin (anggota aktif)</span></div>
+      <div class="kpi ${reds ? "crit" : ""}"><span class="k-label">Overload</span><span class="k-val">${reds}</span><span class="k-sub">anggota di atas ${S.cfg.red}%</span></div>
+      <div class="kpi ${yel ? "warn" : ""}"><span class="k-label">Mendekati batas</span><span class="k-val">${yel}</span><span class="k-sub">anggota ${S.cfg.yellow}–${S.cfg.red}%</span></div>
+      <div class="kpi"><span class="k-label">Tugas aktif</span><span class="k-val">${active.length}</span><span class="k-sub">${pts} poin beban</span></div>
+      <div class="kpi ${nAl ? "crit" : ""}"><span class="k-label">Perlu handover</span><span class="k-val">${nAl}</span><span class="k-sub">${S.members.filter(m => m.status !== "Aktif").length} anggota tidak aktif</span></div>`;
+    $("#dash-alerts").innerHTML = S.alerts.length ? `<h2>Eskalasi otomatis</h2>` + S.alerts.map(alertGroup).join("") : "";
+    const sorted = [...S.members].sort((a, b) => S.loads[b.id].pct - S.loads[a.id].pct);
+    $("#dash-members").innerHTML = sorted.map(m => {
+      const L = S.loads[m.id];
+      return `<article class="mcard lv-${L.level}">
+        <div class="mc-top">${avatar(m)}<div><h3>${esc(m.name)}</h3><p>${esc(m.level)} · kapasitas ${m.capacity} poin${m.id === myMemberId() ? " · <b>Anda</b>" : ""}</p></div>${statusPill(m.status)}</div>
+        ${meter(L, m.capacity)}
+        <div class="mc-nums"><span class="big">${pctTxt(L.pct)}</span><span>${r1(L.total)} / ${m.capacity} poin</span></div>
+        <div class="mc-break"><span><i class="swatch lv-${L.level}"></i>PIC <b>${L.pic}</b> · ${L.picN} tugas</span><span><i class="swatch striped lv-${L.level}"></i>Siaga <b>${r1(L.bak)}</b> · ${L.bakN} backup</span><span class="pill ${LV_PILL[L.level]}">${LV_TXT[L.level]}</span></div>
+      </article>`;
+    }).join("");
+  }
+};
+function alertGroup(g) {
+  const L = S.loads[g.p.id];
+  const title = g.absent ? `${esc(g.p.name)} sedang ${esc(g.p.status)}` : `${esc(g.p.name)} melewati batas merah (${pctTxt(L.pct)})`;
+  const sub = g.absent ? `${g.tasks.length} tugas aktif harus diambil alih backup.` : `Alihkan sebagian tugas ke backup sampai beban di bawah ${S.cfg.red}%.`;
+  return `<div class="alert ${g.absent ? "" : "warn"}">
+    <div class="alert-head"><span class="pill ${g.absent ? "crit" : "warn"}">${g.absent ? "Status berubah" : "Overload"}</span><h3>${title}</h3><span class="muted" style="font-size:.82rem">${sub}</span></div>
+    ${g.tasks.map(({ t, reasons }) => handoverRow(t, reasons)).join("")}
+  </div>`;
+}
+function handoverRow(t, reasons) {
+  const b = mem(t.backupId); const me = myMemberId();
+  const bOk = b && b.status === "Aktif";
+  const after = b ? (S.loads[b.id].total - t.weight * S.cfg.backupFactor + t.weight) / b.capacity * 100 : 0;
+  let action = "";
+  if (canWrite() && bOk && (isLead() || me === b.id)) action = `<button class="btn sm ${me === b.id && !isLead() ? "primary" : "warn"}" data-act="handover" data-id="${esc(t.id)}">${me === b.id && !isLead() ? "Ambil alih tugas" : "Alihkan ke " + esc(b.name.split(" ")[0])}</button>`;
+  else if (canWrite() && !bOk && isLead()) action = `<button class="btn sm" data-act="open-task" data-id="${esc(t.id)}">Tetapkan ulang</button>`;
+  else if (bOk) action = `<span class="note">Menunggu ${esc(b.name.split(" ")[0])} atau Team Lead</span>`;
+  return `<div class="alert-task"><div class="t"><b>${esc(t.title)}</b><small>${t.weight} poin · ${esc(reasons.join(", "))} · ${bOk ? `Backup ${esc(b.name)}: beban jadi ${pctTxt(after)}` : b ? `Backup ${esc(b.name)} juga ${esc(b.status)}` : "Belum ada backup"}</small></div>${action}</div>`;
+}
+
+/* ---------- View: Papan tugas ---------- */
+function newDraft() { return { title: "", desc: "", k: 3, deadline: ymd(shift(7)), uMode: "auto", u: 3, hours: 8, pic: null, bak: null, picManual: false, bakManual: false, err: "" }; }
+VIEWS.tugas = {
+  mount() {
+    S.draft ||= newDraft();
+    const d = S.draft;
+    return `
+    <header class="page-head">
+      <div><p class="eyebrow">Distribusi tugas terbuka</p><h1>Papan tugas</h1>
+      <p class="lede">Semua anggota melihat siapa mengerjakan apa. PIC dan backup memperbarui progres; Team Lead membuat tugas dan menetapkan penanggung jawab.</p></div>
+      <div id="composer-toggle"></div>
+    </header>
+    <section class="panel" id="composer" ${S.composerOpen ? "" : "hidden"}>
+      <div class="panel-head"><div><p class="eyebrow">Kalkulator pembobotan</p><h2>Tugas baru</h2></div><button class="btn ghost sm" data-act="toggle-composer">Tutup</button></div>
+      <form class="composer" id="composer-form" novalidate>
+        <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+          <label class="field"><span>Judul tugas</span><input type="text" id="d-title" value="${esc(d.title)}" placeholder="mis. Integrasi API pembayaran" maxlength="120"></label>
+          <label class="field"><span>Deskripsi (opsional)</span><textarea id="d-desc" maxlength="1000" placeholder="Lingkup dan definisi selesai">${esc(d.desc)}</textarea></label>
+          <div class="field"><span>Kompleksitas</span>
+            <div class="seg" role="radiogroup" aria-label="Kompleksitas">${[1, 2, 3, 4, 5].map(k => `<label title="${KLAB[k]}"><input type="radio" name="d-k" value="${k}" ${d.k === k ? "checked" : ""}>${k} · ${KLAB[k]}</label>`).join("")}</div>
+          </div>
+          <div class="grid3">
+            <label class="field"><span>Tenggat</span><input type="date" id="d-deadline" value="${esc(d.deadline)}"></label>
+            <label class="field"><span>Urgensi</span><select id="d-umode"><option value="auto" ${d.uMode === "auto" ? "selected" : ""}>Otomatis</option>${[1, 2, 3, 4, 5].map(u => `<option value="${u}" ${d.uMode === String(u) ? "selected" : ""}>${u} · ${ULAB[u]}</option>`).join("")}</select></label>
+            <label class="field"><span>Estimasi durasi (jam)</span><input type="number" id="d-hours" min="0.5" max="400" step="0.5" value="${d.hours}"></label>
+          </div>
+          <div class="calc" id="calc"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+          <div class="panel-head"><h3>Rekomendasi penugasan</h3><span class="note">Diurutkan dari beban setelah ditugaskan</span></div>
+          <div class="rec-list" id="recs"></div>
+          <div class="summary" id="assign-summary"></div>
+        </div>
+      </form>
+    </section>
+    <section style="display:flex;flex-direction:column;gap:12px">
+      <div class="toolbar">
+        <input type="search" id="f-q" placeholder="Cari tugas" value="${esc(S.filters.q)}" aria-label="Cari tugas">
+        <select id="f-member" aria-label="Filter anggota"></select>
+        <label class="switch"><input type="checkbox" id="f-mine" ${S.filters.mine ? "checked" : ""}> Hanya tugas saya</label>
+        <span class="note" id="board-count"></span>
+      </div>
+      <div class="board" id="board"></div>
+    </section>`;
+  },
+  update() {
+    $("#composer-toggle").innerHTML = isLead() && canWrite() && S.members.length ? `<button class="btn primary" data-act="toggle-composer">${S.composerOpen ? "Sembunyikan form" : "+ Tugas baru"}</button>` : "";
+    if (!(isLead() && canWrite())) $("#composer").hidden = true; else $("#composer").hidden = !S.composerOpen;
+    const fm = $("#f-member"); const v = S.filters.member;
+    fm.innerHTML = `<option value="">Semua anggota</option>` + S.members.map(m => `<option value="${esc(m.id)}" ${m.id === v ? "selected" : ""}>${esc(m.name)}</option>`).join("");
+    $("#f-mine").closest("label").hidden = !myMemberId();
+    if (!S.composerOpen || $("#composer").hidden) {} else updateComposer();
+    updateBoard();
+  }
+};
+function updateBoard() {
+  const el = $("#board"); if (!el) return;
+  if (!loaded()) { el.innerHTML = loadingBlock(); return; }
+  if (!S.members.length) { el.style.display = "block"; el.innerHTML = emptyTeam(); return; }
+  el.style.display = "";
+  const q = S.filters.q.trim().toLowerCase(), fmem = S.filters.member, mine = S.filters.mine && myMemberId();
+  const flagged = new Set(alertTasks().map(x => x.t.id));
+  const list = S.tasks.filter(t => (!q || t.title.toLowerCase().includes(q)) && (!fmem || t.picId === fmem || t.backupId === fmem) && (!mine || t.picId === mine || t.backupId === mine));
+  $("#board-count").textContent = `${list.length} tugas`;
+  el.innerHTML = TSTAT.map(([k, l]) => {
+    let items = list.filter(t => t.status === k);
+    items.sort(k === "done" ? (a, b) => (b.doneAt || "").localeCompare(a.doneAt || "") : (a, b) => (a.deadline || "9").localeCompare(b.deadline || "9"));
+    const more = k === "done" && items.length > 12 ? items.length - 12 : 0; if (more) items = items.slice(0, 12);
+    const pts = list.filter(t => t.status === k).reduce((s, t) => s + (t.weight || 0), 0);
+    return `<div class="col"><div class="col-head"><span>${l}</span><span class="num">${list.filter(t => t.status === k).length} · ${pts} poin</span></div>
+      ${items.map(t => taskCard(t, flagged.has(t.id))).join("") || `<p class="empty-col">Kosong</p>`}
+      ${more ? `<p class="empty-col">+${more} tugas selesai lainnya di Laporan</p>` : ""}</div>`;
+  }).join("");
+}
+function taskCard(t, flag) {
+  const [dl, dc] = t.status === "done" ? ["Selesai " + fmtDate(t.doneAt), ""] : dueLabel(t.deadline);
+  return `<article class="tcard ${flag ? "flag" : ""}" data-act="open-task" data-id="${esc(t.id)}" tabindex="0">
+    <h4>${esc(t.title)}</h4>
+    <div class="tmeta"><span class="wbadge">${t.weight} poin</span><span>K${t.complexity} · U${t.urgency} · ${t.hours} jam</span><span class="due ${dc}">${esc(dl)}</span>${flag ? `<span class="pill crit">Perlu handover</span>` : ""}</div>
+    <div class="people">${chip(mem(t.picId))}${chip(mem(t.backupId), true)}</div>
+    ${canProgress(t) ? `<select data-status="${esc(t.id)}" aria-label="Ubah status ${esc(t.title)}">${TSTAT.map(([k, l]) => `<option value="${k}" ${t.status === k ? "selected" : ""}>${l}</option>`).join("")}</select>` : ""}
+  </article>`;
+}
+function draftU() { const d = S.draft; return d.uMode === "auto" ? urgencyFromDeadline(d.deadline) : +d.uMode; }
+function updateComposer() {
+  const d = S.draft; if (!$("#calc")) return;
+  const u = draftU(), h = Math.max(0, +d.hours || 0), w = h ? weightOf(d.k, u, h) : 0, { kf, uf } = factors(d.k, u);
+  const dd = dayDiff(d.deadline);
+  $("#calc").innerHTML = `<span class="eyebrow">Total bobot tugas</span>
+    <div class="wt"><span class="num">${w}</span><span class="muted">poin beban kerja</span></div>
+    <div class="formula">${h} jam × ${kf.toFixed(2)} (kompleksitas ${d.k}) × ${uf.toFixed(2)} (urgensi ${u}${d.uMode === "auto" ? `, tenggat ${dd === null ? "—" : dd < 0 ? "lewat" : dd + " hari"}` : ""}) = ${r1(h * kf * uf)} → ${w}</div>
+    <div class="note">Backup menanggung beban siaga ${Math.round(S.cfg.backupFactor * 100)}% = ${r1(w * S.cfg.backupFactor)} poin.</div>`;
+  if (!S.members.length) { $("#recs").innerHTML = `<p class="note">Tambahkan anggota tim terlebih dahulu.</p>`; $("#assign-summary").innerHTML = ""; return; }
+  const ranked = rankPIC(w, d.k);
+  if (!d.picManual || !mem(d.pic)) d.pic = ranked[0]?.m.id || null;
+  const bRank = rankBackup(w, d.k, [d.pic]);
+  if (!d.bakManual || !mem(d.bak) || d.bak === d.pic) { d.bak = bRank[0]?.m.id || null; d.bakManual = false; }
+  $("#recs").innerHTML = ranked.map((r, i) => {
+    const isPic = r.m.id === d.pic, isBak = r.m.id === d.bak;
+    const add = isBak ? w * S.cfg.backupFactor : isPic ? w : w;
+    const fit = r.m.status !== "Aktif" ? ["Tidak tersedia", "crit"] : r.after > S.cfg.red ? ["Overload", "crit"] : r.after >= S.cfg.yellow ? ["Cukup", "warn"] : ["Ideal", "ok"];
+    return `<div class="rec ${isPic ? "sel-pic" : isBak ? "sel-bak" : ""}">
+      <span class="rank">${i + 1}</span>
+      <div class="who"><b>${esc(r.m.name)} <span class="pill ${fit[1]}">${fit[0]}</span></b><small>${esc(r.m.level)} · ${esc(r.m.skills || "—")}</small></div>
+      <div class="acts"><button type="button" class="btn sm" data-act="pick-pic" data-id="${esc(r.m.id)}" aria-pressed="${isPic}">PIC</button><button type="button" class="btn sm" data-act="pick-bak" data-id="${esc(r.m.id)}" aria-pressed="${isBak}" ${isPic ? "disabled" : ""}>Backup</button></div>
+      ${meter(r.L, r.m.capacity, isBak ? w * S.cfg.backupFactor : w, true)}
+      <div class="proj"><span class="num">${pctTxt(r.L.pct)} → ${pctTxt(isBak ? (r.L.total + w * S.cfg.backupFactor) / r.m.capacity * 100 : r.after)}</span><span>${esc(r.notes.join(" · "))}</span></div>
+    </div>`;
+  }).join("");
+  const pm = mem(d.pic), bm = mem(d.bak);
+  $("#assign-summary").innerHTML = `<div class="who-line">PIC <b>${esc(pm?.name || "—")}</b> ${d.picManual ? `<span class="pill plain">dipilih manual</span>` : `<span class="pill ok">rekomendasi sistem</span>`}<br>Backup <b>${esc(bm?.name || "—")}</b> ${d.bakManual ? `<span class="pill plain">dipilih manual</span>` : `<span class="pill ok">rekomendasi sistem</span>`}</div>
+    <div class="row">${d.err ? `<span class="error-text">${esc(d.err)}</span>` : ""}<button type="submit" class="btn primary">Buat &amp; tetapkan</button></div>`;
+}
+async function submitTask() {
+  const d = S.draft; const u = draftU(); const h = +d.hours;
+  d.err = !d.title.trim() ? "Isi judul tugas." : !(h > 0) ? "Estimasi durasi harus lebih dari 0 jam." : !d.deadline ? "Pilih tenggat." : !d.pic ? "Pilih PIC." : d.bak === d.pic ? "Backup harus berbeda dari PIC." : "";
+  if (d.err) return updateComposer();
+  const w = weightOf(d.k, u, h); const id = rid("t");
+  const t = { title: d.title.trim(), desc: d.desc.trim(), complexity: d.k, urgency: u, urgencyMode: d.uMode === "auto" ? "auto" : "manual", hours: h, deadline: d.deadline, weight: w, picId: d.pic, backupId: d.bak || null, status: "todo", createdAt: new Date().toISOString(), doneAt: null, createdBy: S.me.id || null, handovers: [], autoPicked: !d.picManual };
+  try {
+    await put("tasks", id, t);
+    log("task_new", `Tugas baru "${t.title}" (${w} poin) ditetapkan ke ${nm(t.picId)}, backup ${nm(t.backupId)}${t.autoPicked ? " sesuai rekomendasi sistem" : ""}.`, { taskId: id });
+    const after = S.loads[t.picId] ? S.loads[t.picId].pct : 0;
+    toast(`"${t.title}" ditetapkan ke ${nm(t.picId)} (beban ${pctTxt(after)}).`, after > S.cfg.red ? "crit" : "ok");
+    S.draft = newDraft(); S.composerOpen = false; setRoute();
+  } catch {}
+}
+async function setStatus(id, st) {
+  const t = S.tasks.find(x => x.id === id); if (!t || t.status === st) return;
+  try {
+    await patch("tasks", id, { status: st, doneAt: st === "done" ? new Date().toISOString() : null });
+    log("status", `"${t.title}" dipindahkan dari ${TLABEL[t.status]} ke ${TLABEL[st]}.`, { taskId: id });
+  } catch {}
+}
+async function handover(id) {
+  const t = S.tasks.find(x => x.id === id); if (!t || !t.backupId) return;
+  const from = t.picId, to = t.backupId;
+  const reason = alertTasks().find(x => x.t.id === id)?.reasons.join(", ") || "dialihkan Team Lead";
+  const nb = rankBackup(t.weight, t.complexity, [from, to]).find(r => r.m.status === "Aktif")?.m.id || null;
+  try {
+    await patch("tasks", id, { picId: to, backupId: nb, handovers: [...(t.handovers || []), { from, to, at: new Date().toISOString(), reason, by: S.me.id || null }] });
+    log("handover", `Handover: "${t.title}" dialihkan dari ${nm(from)} ke ${nm(to)} (${reason}). Backup baru: ${nm(nb)}.`, { taskId: id });
+    toast(`${nm(to)} kini PIC "${t.title}". Bobot ${t.weight} poin ikut berpindah.`, "ok");
+  } catch {}
+}
+
+/* ---------- View: Tim ---------- */
+VIEWS.tim = {
+  mount: () => `
+    <header class="page-head">
+      <div><p class="eyebrow">Setup kapasitas</p><h1>Tim &amp; kapasitas</h1>
+      <p class="lede">Kapasitas maksimal tiap anggota menjadi pembagi persentase beban. Ubah status ke Cuti, Sakit, atau Izin untuk memicu handover otomatis.</p></div>
+      <div id="tim-actions" class="row"></div>
+    </header>
+    <section id="tim-table"></section>
+    <section class="panel" id="tim-cfg"></section>`,
+  update() {
+    $("#tim-actions").innerHTML = isLead() && canWrite() ? `<button class="btn primary" data-act="add-member">+ Tambah anggota</button>` : "";
+    if (!loaded()) { $("#tim-table").innerHTML = loadingBlock(); return; }
+    $("#tim-table").innerHTML = !S.members.length ? emptyTeam() : `<div class="tablewrap"><table>
+      <thead><tr><th>Anggota</th><th>Level</th><th class="n">Kapasitas</th><th>Status</th><th class="n">Beban</th><th style="min-width:150px">Meter</th><th>Keahlian</th>${isLead() && canWrite() ? "<th></th>" : ""}</tr></thead>
+      <tbody>${[...S.members].sort((a, b) => a.name.localeCompare(b.name)).map(m => { const L = S.loads[m.id]; return `<tr>
+        <td><div class="namecell">${avatar(m)}<div><b>${esc(m.name)}</b><small>${L.picN} PIC · ${L.bakN} backup${m.demo ? " · contoh" : ""}</small></div></div></td>
+        <td>${esc(m.level)}</td><td class="n">${m.capacity}</td><td>${statusPill(m.status)}</td>
+        <td class="n">${pctTxt(L.pct)}</td><td>${meter(L, m.capacity, 0, true)}</td><td class="muted">${esc(m.skills || "—")}</td>
+        ${isLead() && canWrite() ? `<td><button class="btn sm" data-act="open-member" data-id="${esc(m.id)}">Ubah</button></td>` : ""}</tr>`; }).join("")}</tbody></table></div>`;
+    if (!document.activeElement || !$("#tim-cfg").contains(document.activeElement)) renderCfg();
+  }
+};
+function renderCfg() {
+  const c = S.cfg, ed = isLead() && canWrite(), dis = ed ? "" : "disabled";
+  $("#tim-cfg").innerHTML = `
+    <div class="panel-head"><div><p class="eyebrow">Aturan sistem</p><h2>Ambang &amp; rumus pembobotan</h2></div>${ed ? "" : `<span class="note">Hanya Team Lead yang dapat mengubah</span>`}</div>
+    <form id="cfg-form" style="display:flex;flex-direction:column;gap:16px">
+      <div class="grid3">
+        <label class="field"><span>Ambang kuning (%)</span><input type="number" id="c-yellow" min="10" max="150" value="${c.yellow}" ${dis}></label>
+        <label class="field"><span>Ambang merah (%)</span><input type="number" id="c-red" min="20" max="200" value="${c.red}" ${dis}><small>Di atas nilai ini, PIC memicu handover.</small></label>
+        <label class="field"><span>Beban siaga backup (%)</span><input type="number" id="c-bf" min="0" max="100" value="${Math.round(c.backupFactor * 100)}" ${dis}></label>
+        <label class="field"><span>Koefisien kompleksitas</span><input type="number" id="c-k" step="0.05" min="0" max="2" value="${c.kCoef}" ${dis}><small>Faktor = 1 + koef × (K − 1)</small></label>
+        <label class="field"><span>Koefisien urgensi</span><input type="number" id="c-u" step="0.05" min="0" max="2" value="${c.uCoef}" ${dis}><small>Faktor = 1 + koef × (U − 1)</small></label>
+      </div>
+      <div class="field"><span>Kapasitas bawaan per level (poin)</span>
+        <div class="grid3" style="grid-template-columns:repeat(4,minmax(0,1fr))">${LEVELS.map(l => `<label class="field"><small>${l}</small><input type="number" id="c-cap-${l}" min="10" max="1000" value="${c.caps[l]}" ${dis}></label>`).join("")}</div>
+      </div>
+      <p class="note">Rumus: <span class="mono">Bobot = Jam × (1 + ${c.kCoef}·(K−1)) × (1 + ${c.uCoef}·(U−1))</span>. Urgensi otomatis: tenggat ≤1 hari = 5, ≤3 = 4, ≤7 = 3, ≤14 = 2, lebih lama = 1.</p>
+      ${ed ? `<div class="row"><button class="btn primary" type="submit">Simpan aturan</button><span class="note">Mengubah kapasitas bawaan tidak mengubah anggota yang sudah ada.</span></div>` : ""}
+    </form>`;
+}
+async function saveCfg() {
+  const n = id => +$(id).value;
+  const c = { yellow: n("#c-yellow"), red: n("#c-red"), backupFactor: n("#c-bf") / 100, kCoef: n("#c-k"), uCoef: n("#c-u"), caps: Object.fromEntries(LEVELS.map(l => [l, n("#c-cap-" + l)])) };
+  if (!(c.yellow > 0 && c.red > c.yellow)) return toast("Ambang merah harus lebih besar dari ambang kuning.", "crit");
+  try { await put("settings", "config", c); log("member", `Aturan diperbarui: kuning ${c.yellow}%, merah ${c.red}%, siaga backup ${Math.round(c.backupFactor * 100)}%.`); toast("Aturan disimpan.", "ok"); } catch {}
+}
+
+/* ---------- View: Laporan ---------- */
+VIEWS.laporan = {
+  mount: () => `
+    <header class="page-head">
+      <div><p class="eyebrow">Transparansi &amp; akuntabilitas</p><h1>Log &amp; laporan kinerja</h1>
+      <p class="lede">Evaluasi berbasis data: poin yang diselesaikan, ketepatan waktu, dan handover. Semua anggota dapat membaca halaman ini.</p></div>
+      <div class="row"><div class="seg" id="period">${[[7, "7 hari"], [30, "30 hari"], [90, "90 hari"], [0, "Semua"]].map(([v, l]) => `<button type="button" data-act="period" data-v="${v}" aria-pressed="${S.period === v}">${l}</button>`).join("")}</div><button class="btn" data-act="export">Ekspor CSV</button></div>
+    </header>
+    <section class="panel"><div class="panel-head"><h2>Evaluasi per anggota</h2><span class="note" id="rep-range"></span></div><div id="rep-table"></div>
+      <p class="note">Indeks kinerja = 60% × (poin selesai ÷ poin tertinggi di tim) + 40% × ketepatan waktu. Anggota tanpa tugas selesai pada periode ini tidak diberi indeks.</p></section>
+    <section class="panel chart"><div class="panel-head"><h2>Poin selesai vs. tepat waktu</h2><div class="legend"><span><i class="swatch" style="--c:var(--accent)"></i>Poin selesai</span><span><i class="swatch" style="--c:var(--ok)"></i>Poin selesai tepat waktu</span></div></div><div id="rep-chart"></div></section>
+    <section class="panel"><div class="panel-head"><h2>Log aktivitas</h2>
+      <select id="log-type" style="width:auto" aria-label="Filter jenis log"><option value="">Semua aktivitas</option><option value="task_new">Tugas baru</option><option value="status">Perubahan progres</option><option value="handover">Handover</option><option value="member">Tim &amp; aturan</option></select></div>
+      <div class="log" id="log"></div></section>`,
+  update() {
+    $("#log-type").value = S.logType;
+    if (!loaded()) { $("#rep-table").innerHTML = loadingBlock(); return; }
+    const rows = evaluate(S.period);
+    $("#rep-range").textContent = S.period ? `${fmtDate(ymd(shift(-S.period)))} – ${fmtDate(ymd(new Date()))}` : "Sejak awal";
+    $("#rep-table").innerHTML = !rows.length ? emptyTeam() : `<div class="tablewrap"><table>
+      <thead><tr><th>Anggota</th><th class="n">Selesai</th><th class="n">Poin selesai</th><th class="n">Tepat waktu</th><th class="n">Rata-rata durasi</th><th class="n">Handover masuk / keluar</th><th class="n">Beban kini</th><th class="n">Indeks</th></tr></thead>
+      <tbody>${rows.map(r => `<tr><td><div class="namecell">${avatar(r.m, "sm")}<div><b>${esc(r.m.name)}</b><small>${esc(r.m.level)}</small></div></div></td>
+        <td class="n">${r.n}</td><td class="n">${r.pts}</td><td class="n">${r.n ? pctTxt(r.onTime) : "—"}</td><td class="n">${r.n ? r1(r.lead) + " hr" : "—"}</td>
+        <td class="n">${r.hoIn} / ${r.hoOut}</td><td class="n"><span class="pill ${LV_PILL[S.loads[r.m.id].level]}">${pctTxt(S.loads[r.m.id].pct)}</span></td><td class="n"><b>${r.idx === null ? "—" : Math.round(r.idx)}</b></td></tr>`).join("")}</tbody></table></div>`;
+    $("#rep-chart").innerHTML = rows.length ? chartSvg(rows) : "";
+    renderLog();
+  }
+};
+function evaluate(days) {
+  const since = days ? Date.now() - days * 864e5 : 0;
+  const rows = S.members.map(m => {
+    const done = S.tasks.filter(t => t.status === "done" && t.picId === m.id && t.doneAt && Date.parse(t.doneAt) >= since);
+    const pts = done.reduce((s, t) => s + (t.weight || 0), 0);
+    const ot = done.filter(t => !t.deadline || ymd(new Date(t.doneAt)) <= t.deadline);
+    const lead = done.length ? done.reduce((s, t) => s + (Date.parse(t.doneAt) - Date.parse(t.createdAt)) / 864e5, 0) / done.length : 0;
+    let hoIn = 0, hoOut = 0;
+    for (const t of S.tasks) for (const h of t.handovers || []) { if (Date.parse(h.at) < since) continue; if (h.to === m.id) hoIn++; if (h.from === m.id) hoOut++; }
+    return { m, n: done.length, pts, otPts: ot.reduce((s, t) => s + (t.weight || 0), 0), onTime: done.length ? ot.length / done.length * 100 : 0, lead, hoIn, hoOut };
+  });
+  const max = Math.max(1, ...rows.map(r => r.pts));
+  rows.forEach(r => r.idx = r.n ? 60 * r.pts / max + 0.4 * r.onTime : null);
+  return rows.sort((a, b) => (b.idx ?? -1) - (a.idx ?? -1));
+}
+function chartSvg(rows) {
+  const W = 720, rowH = 34, top = 24, left = 150, right = 40, H = top + rows.length * rowH + 10;
+  const max = Math.max(10, ...rows.map(r => r.pts)); const step = max <= 50 ? 10 : max <= 150 ? 25 : max <= 400 ? 50 : 100;
+  const niceMax = Math.ceil(max / step) * step; const x = v => left + v / niceMax * (W - left - right);
+  let g = "";
+  for (let v = 0; v <= niceMax; v += step) g += `<line class="grid" x1="${x(v)}" x2="${x(v)}" y1="${top - 6}" y2="${H - 6}"/><text x="${x(v)}" y="${top - 10}" text-anchor="middle">${v}</text>`;
+  rows.forEach((r, i) => {
+    const y = top + i * rowH;
+    g += `<text class="lbl" x="${left - 10}" y="${y + 16}" text-anchor="end">${esc(r.m.name.length > 18 ? r.m.name.slice(0, 17) + "…" : r.m.name)}</text>
+      <rect class="bar" x="${left}" y="${y + 4}" width="${Math.max(0, x(r.pts) - left)}" height="10" rx="3"/>
+      <rect class="bar2" x="${left}" y="${y + 16}" width="${Math.max(0, x(r.otPts) - left)}" height="10" rx="3"/>
+      <text x="${x(r.pts) + 6}" y="${y + 13}">${r.pts}</text>`;
+  });
+  return `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafik poin selesai per anggota" style="min-width:520px">${g}</svg></div>`;
+}
+async function renderLog() {
+  const el = $("#log"); if (!el) return;
+  const items = S.logs.filter(l => !S.logType || l.type === S.logType).slice(0, 150);
+  if (!items.length) { el.innerHTML = `<p class="note">Belum ada aktivitas tercatat.</p>`; return; }
+  let profs = {};
+  const ids = [...new Set(items.filter(l => l.by && !(l.byMember && mem(l.byMember))).map(l => l.by))];
+  if (ids.length && user) { try { profs = await user.profiles(ids); } catch {} }
+  if (!$("#log")) return;
+  $("#log").innerHTML = items.map(l => {
+    const actor = l.byMember && mem(l.byMember) ? mem(l.byMember).name : l.by ? (profs[l.by]?.name || "Seseorang") : l.demo ? "Sistem (contoh)" : S.mode === "local" ? "Anda" : "Sistem";
+    return `<div class="log-item"><span class="dot ${esc(l.type)}"></span><div><div>${esc(l.text)}</div><div class="actor">oleh ${esc(actor)}</div></div><time datetime="${esc(l.at)}">${esc(fmtTime(l.at))}</time></div>`;
+  }).join("");
+}
+async function exportCsv() {
+  const rows = evaluate(S.period);
+  const q = v => `"${String(v).replace(/"/g, '""')}"`;
+  const lines = [["Anggota", "Level", "Kapasitas", "Tugas selesai", "Poin selesai", "Tepat waktu (%)", "Rata-rata durasi (hari)", "Handover masuk", "Handover keluar", "Beban kini (%)", "Indeks"].map(q).join(",")];
+  rows.forEach(r => lines.push([r.m.name, r.m.level, r.m.capacity, r.n, r.pts, Math.round(r.onTime), r1(r.lead), r.hoIn, r.hoOut, Math.round(S.loads[r.m.id].pct), r.idx === null ? "" : Math.round(r.idx)].map(q).join(",")));
+  const name = `teamsync-laporan-${S.period ? S.period + "hari" : "semua"}-${ymd(new Date())}.csv`;
+  const dl = window.claude ? await window.claude.use("downloads").catch(() => null) : null;
+  if (!dl) return toast("Ekspor file tidak tersedia di tampilan ini.", "crit");
+  try { await dl.save({ filename: name, data: "﻿" + lines.join("\n") }); } catch (e) { if (e?.code !== "dismissed" && e?.code !== "declined") toast("Ekspor dibatalkan.", ""); }
+}
+
+/* ---------- Modal ---------- */
+function openModal(html) { const m = $("#modal"); m.innerHTML = `<div class="modal-bg" data-act="modal-bg"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`; m.hidden = false; setTimeout(() => m.querySelector("input,select,button:not(.ghost)")?.focus(), 30); }
+function closeModal() { $("#modal").hidden = true; $("#modal").innerHTML = ""; }
+function memberModal(id) {
+  const m = id ? mem(id) : { name: "", level: "Junior", capacity: S.cfg.caps.Junior, status: "Aktif", skills: "" };
+  const L = id ? S.loads[id] : null;
+  openModal(`<div class="modal-head"><div><p class="eyebrow">${id ? "Ubah profil" : "Anggota baru"}</p><h2>${id ? esc(m.name) : "Tambah anggota tim"}</h2></div><button class="btn ghost sm" data-act="close-modal" aria-label="Tutup">Tutup</button></div>
+    <form id="member-form" data-id="${esc(id || "")}" style="display:flex;flex-direction:column;gap:14px">
+      <label class="field"><span>Nama</span><input type="text" id="m-name" value="${esc(m.name)}" maxlength="60" required></label>
+      <div class="grid2">
+        <label class="field"><span>Level pengalaman</span><select id="m-level">${LEVELS.map(l => `<option ${l === m.level ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+        <label class="field"><span>Kapasitas maksimal (poin)</span><input type="number" id="m-cap" min="10" max="1000" value="${m.capacity}"><small>Bawaan level: ${LEVELS.map(l => l + " " + S.cfg.caps[l]).join(", ")}</small></label>
+        <label class="field"><span>Status</span><select id="m-status">${STATUSES.map(s => `<option ${s === m.status ? "selected" : ""}>${s}</option>`).join("")}</select>${L && L.picN ? `<small>Status selain Aktif memicu handover untuk ${L.picN} tugas PIC.</small>` : ""}</label>
+        <label class="field"><span>Keahlian</span><input type="text" id="m-skills" value="${esc(m.skills || "")}" maxlength="80" placeholder="mis. Backend, QA"></label>
+      </div>
+      <p class="error-text" id="m-err"></p>
+      <div class="modal-foot">${id ? `<button type="button" class="btn danger" data-act="del-member" data-id="${esc(id)}">Hapus anggota</button>` : "<span></span>"}<div class="row"><button type="button" class="btn" data-act="close-modal">Batal</button><button class="btn primary" type="submit">Simpan</button></div></div>
+    </form>`);
+}
+async function saveMember(form) {
+  const id = form.dataset.id; const old = id ? mem(id) : null;
+  const data = { name: $("#m-name").value.trim(), level: $("#m-level").value, capacity: +$("#m-cap").value, status: $("#m-status").value, skills: $("#m-skills").value.trim() };
+  if (!data.name) return $("#m-err").textContent = "Isi nama anggota.";
+  if (!(data.capacity >= 10)) return $("#m-err").textContent = "Kapasitas minimal 10 poin.";
+  const nid = id || rid("m");
+  try {
+    await put("members", nid, { ...(old ? { createdAt: old.createdAt || null, demo: !!old.demo } : { createdAt: new Date().toISOString() }), ...data });
+    closeModal();
+    if (!old) log("member", `${data.name} bergabung sebagai ${data.level} dengan kapasitas ${data.capacity} poin.`);
+    else {
+      if (old.status !== data.status) {
+        log("member", `Status ${data.name} berubah: ${old.status} → ${data.status}.`);
+        const n = S.tasks.filter(t => t.status !== "done" && t.picId === nid).length;
+        if (data.status !== "Aktif" && n) toast(`${data.name} ${data.status}: ${n} tugas perlu handover ke backup.`, "crit");
+      }
+      if (old.capacity !== data.capacity) log("member", `Kapasitas ${data.name} diubah: ${old.capacity} → ${data.capacity} poin.`);
+    }
+    toast(old ? "Profil disimpan." : `${data.name} ditambahkan.`, "ok");
+  } catch {}
+}
+async function deleteMember(btn) {
+  if (!btn.classList.contains("armed")) { btn.classList.add("armed"); const n = S.tasks.filter(t => t.status !== "done" && (t.picId === btn.dataset.id || t.backupId === btn.dataset.id)).length; btn.textContent = n ? `Yakin? ${n} tugas aktif kehilangan penanggung jawab` : "Klik lagi untuk menghapus"; return; }
+  const m = mem(btn.dataset.id); try { await del("members", btn.dataset.id); closeModal(); log("member", `${m?.name || "Anggota"} dihapus dari tim.`); } catch {}
+}
+function taskModal(id) {
+  const t = S.tasks.find(x => x.id === id); if (!t) return;
+  const ed = isLead() && canWrite(); const flag = alertTasks().find(x => x.t.id === id);
+  const opts = (sel, none) => (none ? `<option value="">— tidak ada —</option>` : "") + S.members.map(m => `<option value="${esc(m.id)}" ${m.id === sel ? "selected" : ""}>${esc(m.name)} (${pctTxt(S.loads[m.id].pct)}${m.status !== "Aktif" ? ", " + esc(m.status) : ""})</option>`).join("");
+  const [dl, dc] = dueLabel(t.deadline);
+  openModal(`<div class="modal-head"><div><p class="eyebrow">Tiket tugas · ${TLABEL[t.status]}</p><h2>${esc(t.title)}</h2></div><button class="btn ghost sm" data-act="close-modal">Tutup</button></div>
+    ${t.desc ? `<p>${esc(t.desc)}</p>` : ""}
+    <dl class="kv">
+      <div><dt>Bobot</dt><dd class="num">${t.weight} poin</dd></div>
+      <div><dt>Kompleksitas</dt><dd>${t.complexity} · ${KLAB[t.complexity]}</dd></div>
+      <div><dt>Urgensi</dt><dd>${t.urgency} · ${ULAB[t.urgency]}</dd></div>
+      <div><dt>Estimasi</dt><dd class="num">${t.hours} jam</dd></div>
+      <div><dt>Tenggat</dt><dd>${fmtDate(t.deadline)} ${t.status !== "done" ? `<span class="due ${dc}" style="font-size:.76rem">${dl}</span>` : ""}</dd></div>
+      <div><dt>Dibuat</dt><dd>${fmtDate(t.createdAt)}</dd></div>
+    </dl>
+    ${flag ? `<div class="alert">${handoverRow(t, flag.reasons)}</div>` : ""}
+    <form id="task-form" data-id="${esc(t.id)}" style="display:flex;flex-direction:column;gap:14px">
+      <div class="grid3">
+        <label class="field"><span>Status</span><select id="t-status" ${canProgress(t) ? "" : "disabled"}>${TSTAT.map(([k, l]) => `<option value="${k}" ${t.status === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+        <label class="field"><span>PIC</span><select id="t-pic" ${ed ? "" : "disabled"}>${opts(t.picId)}</select></label>
+        <label class="field"><span>Backup</span><select id="t-bak" ${ed ? "" : "disabled"}>${opts(t.backupId, true)}</select></label>
+      </div>
+      ${ed ? `<label class="field"><span>Tenggat</span><input type="date" id="t-deadline" value="${esc(t.deadline || "")}"></label>` : ""}
+      ${(t.handovers || []).length ? `<div class="field"><span>Riwayat handover</span>${t.handovers.map(h => `<div class="note">${fmtTime(h.at)} · ${esc(nm(h.from))} → ${esc(nm(h.to))} (${esc(h.reason)})</div>`).join("")}</div>` : ""}
+      <p class="error-text" id="t-err"></p>
+      <div class="modal-foot">${ed ? `<button type="button" class="btn danger" data-act="del-task" data-id="${esc(t.id)}">Hapus tugas</button>` : "<span></span>"}<div class="row"><button type="button" class="btn" data-act="close-modal">Tutup</button>${canProgress(t) ? `<button class="btn primary" type="submit">Simpan</button>` : ""}</div></div>
+    </form>`);
+}
+async function saveTask(form) {
+  const t = S.tasks.find(x => x.id === form.dataset.id); if (!t) return closeModal();
+  const p = {}; const st = $("#t-status").value;
+  if (isLead()) {
+    const pic = $("#t-pic").value, bak = $("#t-bak").value || null, dl = $("#t-deadline")?.value || t.deadline;
+    if (pic === bak) return $("#t-err").textContent = "PIC dan Backup harus orang yang berbeda.";
+    if (pic !== t.picId) p.picId = pic; if (bak !== (t.backupId || null)) p.backupId = bak; if (dl !== t.deadline) p.deadline = dl;
+  }
+  if (st !== t.status) { p.status = st; p.doneAt = st === "done" ? new Date().toISOString() : null; }
+  if (!Object.keys(p).length) return closeModal();
+  try {
+    await patch("tasks", t.id, p); closeModal();
+    if (p.status) log("status", `"${t.title}" dipindahkan dari ${TLABEL[t.status]} ke ${TLABEL[p.status]}.`, { taskId: t.id });
+    if ("picId" in p || "backupId" in p) log("handover", `Penetapan ulang "${t.title}": PIC ${nm(p.picId ?? t.picId)}, backup ${nm("backupId" in p ? p.backupId : t.backupId)}.`, { taskId: t.id });
+    toast("Tugas diperbarui.", "ok");
+  } catch {}
+}
+async function deleteTask(btn) {
+  if (!btn.classList.contains("armed")) { btn.classList.add("armed"); btn.textContent = "Klik lagi untuk menghapus"; return; }
+  const t = S.tasks.find(x => x.id === btn.dataset.id); try { await del("tasks", btn.dataset.id); closeModal(); log("status", `Tugas "${t?.title}" dihapus.`); } catch {}
+}
+
+/* ---------- Notifikasi ---------- */
+function toast(msg, kind = "") {
+  const el = document.createElement("div"); el.className = "toast " + kind; el.setAttribute("role", "status");
+  el.innerHTML = `<span></span><button class="x" aria-label="Tutup">×</button>`; el.firstChild.textContent = msg;
+  el.querySelector(".x").onclick = () => el.remove();
+  $("#toasts").appendChild(el); setTimeout(() => el.remove(), kind === "crit" ? 9000 : 5000);
+}
+function notifyAlerts() {
+  if (!loaded()) return;
+  const now = new Set(alertTasks().map(x => x.t.id + "|" + x.t.picId));
+  if (S.seenAlerts) {
+    const fresh = alertTasks().filter(x => !S.seenAlerts.has(x.t.id + "|" + x.t.picId));
+    const me = myMemberId();
+    if (fresh.length) {
+      const mine = fresh.filter(x => x.t.backupId === me);
+      if (mine.length) toast(`Anda backup untuk ${mine.length} tugas yang perlu diambil alih: ${mine.map(x => x.t.title).join(", ")}.`, "crit");
+      else toast(`Eskalasi: ${fresh.length} tugas perlu handover (${fresh[0].reasons[0]}). Lihat Dashboard.`, "crit");
+    }
+  }
+  S.seenAlerts = now;
+}
+
+/* ---------- Event ---------- */
+document.addEventListener("click", e => {
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  if (e.target.closest("select") && a.classList.contains("tcard")) return;
+  const id = a.dataset.id;
+  switch (a.dataset.act) {
+    case "toggle-composer": S.composerOpen = !S.composerOpen; if (S.composerOpen) S.draft ||= newDraft(); VIEWS.tugas.update(); if (S.composerOpen) $("#d-title")?.focus(); break;
+    case "pick-pic": S.draft.pic = id; S.draft.picManual = true; if (S.draft.bak === id) { S.draft.bak = null; S.draft.bakManual = false; } updateComposer(); break;
+    case "pick-bak": S.draft.bak = id; S.draft.bakManual = true; updateComposer(); break;
+    case "open-task": taskModal(id); break;
+    case "handover": closeModal(); handover(id); break;
+    case "add-member": memberModal(null); break;
+    case "open-member": memberModal(id); break;
+    case "del-member": deleteMember(a); break;
+    case "del-task": deleteTask(a); break;
+    case "close-modal": closeModal(); break;
+    case "modal-bg": if (e.target === a) closeModal(); break;
+    case "load-demo": loadDemo(); break;
+    case "clear-demo": clearDemo(); break;
+    case "period": S.period = +a.dataset.v; document.querySelectorAll("#period button").forEach(b => b.setAttribute("aria-pressed", b === a)); VIEWS.laporan.update(); break;
+    case "export": exportCsv(); break;
+  }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !$("#modal").hidden) closeModal();
+  if ((e.key === "Enter" || e.key === " ") && e.target.classList?.contains("tcard")) { e.preventDefault(); taskModal(e.target.dataset.id); }
+});
+document.addEventListener("input", e => {
+  const t = e.target, d = S.draft;
+  if (t.id === "d-title") d.title = t.value;
+  else if (t.id === "d-desc") d.desc = t.value;
+  else if (t.id === "d-hours") { d.hours = t.value; updateComposer(); }
+  else if (t.id === "f-q") { S.filters.q = t.value; updateBoard(); }
+});
+document.addEventListener("change", e => {
+  const t = e.target, d = S.draft;
+  if (t.name === "d-k") { d.k = +t.value; updateComposer(); }
+  else if (t.id === "d-deadline") { d.deadline = t.value; updateComposer(); }
+  else if (t.id === "d-umode") { d.uMode = t.value; updateComposer(); }
+  else if (t.id === "f-member") { S.filters.member = t.value; updateBoard(); }
+  else if (t.id === "f-mine") { S.filters.mine = t.checked; updateBoard(); }
+  else if (t.dataset.status) setStatus(t.dataset.status, t.value);
+  else if (t.id === "log-type") { S.logType = t.value; renderLog(); }
+  else if (t.id === "m-level") { const cap = $("#m-cap"); if (LEVELS.some(l => +cap.value === S.cfg.caps[l])) cap.value = S.cfg.caps[t.value]; }
+  else if (t.id === "preview-member") { S.asMember = t.checked; S.composerOpen = false; setRoute(); refresh(); }
+  else if (t.id === "claim-sel") claim(t.value);
+});
+document.addEventListener("submit", e => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.id === "composer-form") submitTask();
+  else if (f.id === "member-form") saveMember(f);
+  else if (f.id === "task-form") saveTask(f);
+  else if (f.id === "cfg-form") saveCfg();
+});
+async function claim(memberId) {
+  if (S.mode === "local") { S.localClaim = memberId || null; return refresh(); }
+  if (!S.me.id) return;
+  try { if (memberId) await guard(db.doc("claims/" + S.me.id).set({ memberId })); else await guard(db.doc("claims/" + S.me.id).delete()); toast(memberId ? `Profil Anda: ${nm(memberId)}.` : "Profil dilepas.", "ok"); } catch {}
+}
+window.addEventListener("hashchange", setRoute);
+
+/* ---------- Mulai ---------- */
+async function start() {
+  setRoute(); renderWho();
+  const C = window.claude;
+  [db, user] = C ? await Promise.all([C.use("db").catch(() => null), C.use("user").catch(() => null)]) : [null, null];
+  if (!db) {
+    S.mode = "local"; S.me = { id: null, isLead: true, canWrite: true };
+    const { M, T, L } = demoData(); M.forEach(m => local.members.set(m.id, m)); T.forEach(t => local.tasks.set(t.id, t)); L.forEach(l => local.logs.set(l.id, l));
+    S.localClaim = "m_rina"; syncLocal(); setRoute(); return;
+  }
+  S.mode = "db";
+  if (user) {
+    const me = await user.me(); const cw = await user.can("data.write");
+    S.me = { id: me.id, isLead: !!(me.canEdit || me.isOwner), canWrite: cw !== false };
+  }
+  const timer = setTimeout(() => { if (!loaded()) { S.stale = true; renderBanner(); } }, 10000);
+  const done = () => { if (loaded()) { clearTimeout(timer); if (S.stale) { S.stale = false; } } };
+  const err = e => { clearTimeout(timer); S.ready.members = S.ready.tasks = true; if (e?.code !== "revoked") toast("Sambungan data terputus. Muat ulang halaman untuk mencoba lagi.", "crit"); refresh(); };
+  db.collection("members").onSnapshot(s => { S.members = s.docs.map(d => ({ id: d.id, ...d.data() })); if (!s.metadata.fromCache) S.ready.members = true; done(); refresh(); }, err);
+  db.collection("tasks").onSnapshot(s => { S.tasks = s.docs.map(d => ({ id: d.id, ...d.data() })); if (!s.metadata.fromCache) S.ready.tasks = true; done(); refresh(); }, err);
+  db.collection("logs").orderBy("at", "desc").limit(400).onSnapshot(s => { S.logs = s.docs.map(d => ({ id: d.id, ...d.data() })); if (S.route === "laporan") renderLog(); }, () => {});
+  db.doc("settings/config").onSnapshot(d => { S.cfg = mergeCfg(d.exists ? d.data() : null); refresh(); }, () => {});
+  db.collection("claims").onSnapshot(s => { S.claims = Object.fromEntries(s.docs.map(d => [d.id, d.data().memberId])); refresh(); }, () => {});
+}
+start();
+})();
+</script>
+
+</body>
+</html>
